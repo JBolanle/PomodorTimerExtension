@@ -6,6 +6,7 @@ interface SessionDotsProps {
 }
 
 export function SessionDots({ completedSessions, total }: SessionDotsProps) {
+  const filledCount = completedSessions % total;
   return (
     <div className="flex items-center gap-2">
       {Array.from({ length: total }, (_, i) => (
@@ -13,7 +14,7 @@ export function SessionDots({ completedSessions, total }: SessionDotsProps) {
           key={i}
           className={cn(
             'h-2.5 w-2.5 rounded-full transition-all',
-            i < completedSessions
+            i < filledCount
               ? 'bg-primary session-dot-active'
               : 'bg-muted-foreground/25'
           )}

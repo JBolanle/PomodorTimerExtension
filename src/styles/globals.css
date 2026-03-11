@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
 @theme inline {
+  --font-sans: 'JetBrains Mono', monospace;
+  --font-mono: 'JetBrains Mono', monospace;
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
   --color-card: hsl(var(--card));
@@ -48,7 +50,7 @@
   --border: 214 15% 82%;
   --input: 214 15% 82%;
   --ring: 213 100% 65%;
-  --radius: 0.5rem;
+  --radius: 0;
 }
 
 /*
@@ -74,7 +76,7 @@
   --border: 0 0% 15%;
   --input: 0 0% 15%;
   --ring: 350 80% 58%;
-  --radius: 0.5rem;
+  --radius: 0;
 }
 
 /*
@@ -100,7 +102,7 @@
   --border: 43 20% 16%;
   --input: 43 20% 16%;
   --ring: 43 75% 46%;
-  --radius: 0.5rem;
+  --radius: 0;
 }
 
 @layer base {
@@ -109,6 +111,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'JetBrains Mono', monospace;
   }
 }
 

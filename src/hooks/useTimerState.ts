@@ -1,15 +1,32 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getTimerState, startTimer as chromeStartTimer, stopTimer as chromeStopTimer } from '@/lib/chrome';
-import type { TimerState } from '@/types';
+import {
+  getTimerState,
+  startTimer as chromeStartTimer,
+  pauseTimer as chromePauseTimer,
+  resumeTimer as chromeResumeTimer,
+  skipPhase as chromeSkipPhase,
+  endActivity as chromeEndActivity,
+  startNext as chromeStartNext,
+} from '@/lib/chrome';
+import type { TimerState, TimerMode } from '@/types';
 
 const POLL_INTERVAL = 500;
 
+const INITIAL_STATE: TimerState = {
+  state: 'idle',
+  endTime: null,
+  remainingMs: null,
+  sessionStartedAt: null,
+  currentPhase: 'work',
+  workSessionsCompleted: 0,
+  suggestedNext: null,
+  lastCompletedDurationMs: null,
+  activePresetId: 'default',
+  autoStartNext: false,
+};
+
 export function useTimerState() {
-  const [state, setState] = useState<TimerState>({
-    endTime: null,
-    running: false,
-    completedSessions: 0,
-  });
+  const [timerState, setTimerState] = useState<TimerState>(INITIAL_STATE);
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
@@ -19,7 +36,7 @@ export function useTimerState() {
       try {
         const s = await getTimerState();
         if (active) {
-          setState(s);
+          setTimerState(s);
           setInitialized(true);
         }
       } catch {
@@ -35,23 +52,46 @@ export function useTimerState() {
     };
   }, []);
 
-  const startTimer = useCallback(async (minutes: number) => {
-    await chromeStartTimer(minutes);
+  const startTimer = useCallback(async (phase: TimerMode, minutes: number) => {
+    await chromeStartTimer(phase, minutes);
   }, []);
 
-  const stopTimer = useCallback(async () => {
-    await chromeStopTimer();
+  const pauseTimer = useCallback(async () => {
+    await chromePauseTimer();
   }, []);
 
-  const remainingSeconds = state.running && state.endTime
-    ? Math.max(0, Math.ceil((state.endTime - Date.now()) / 1000))
-    : 0;
+  const resumeTimer = useCallback(async () => {
+    await chromeResumeTimer();
+  }, []);
+
+  const skipPhase = useCallback(async () => {
+    await chromeSkipPhase();
+  }, []);
+
+  const endActivity = useCallback(async () => {
+    await chromeEndActivity();
+  }, []);
+
+  const startNext = useCallback(async (phase?: TimerMode, minutes?: number) => {
+    await chromeStartNext(phase, minutes);
+  }, []);
+
+  const remainingSeconds =
+    timerState.state === 'running' && timerState.endTime
+      ? Math.max(0, Math.ceil((timerState.endTime - Date.now()) / 1000))
+      : timerState.state === 'paused' && timerState.remainingMs
+        ? Math.max(0, Math.ceil(timerState.remainingMs / 1000))
+        : 0;
 
   return {
-    ...state,
+    ...timerState,
     initialized,
     remainingSeconds,
     startTimer,
-    stopTimer,
+    pauseTimer,
+    resumeTimer,
+    skipPhase,
+    endActivity,
+    startNext,
   };
 }

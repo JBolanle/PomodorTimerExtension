@@ -1,32 +1,90 @@
 import { Button } from '@/components/ui/button';
+import type { TimerStateEnum, TimerMode } from '@/types';
+
+const PHASE_LABELS: Record<TimerMode, string> = {
+  work: 'Work',
+  shortBreak: 'Short Break',
+  longBreak: 'Long Break',
+};
 
 interface TimerControlsProps {
-  running: boolean;
+  timerState: TimerStateEnum;
+  suggestedNext: TimerMode | null;
   onStart: () => void;
-  onStop: () => void;
+  onPause: () => void;
+  onResume: () => void;
+  onSkip: () => void;
+  onEndActivity: () => void;
+  onStartNext: () => void;
 }
 
-export function TimerControls({ running, onStart, onStop }: TimerControlsProps) {
-  return (
-    <div className="flex gap-3">
-      {running ? (
-        <Button
-          variant="destructive"
-          size="lg"
-          className="min-w-[120px] btn-press"
-          onClick={onStop}
-        >
-          Stop
-        </Button>
-      ) : (
-        <Button
-          size="lg"
-          className="min-w-[120px] btn-press"
-          onClick={onStart}
-        >
+export function TimerControls({
+  timerState,
+  suggestedNext,
+  onStart,
+  onPause,
+  onResume,
+  onSkip,
+  onEndActivity,
+  onStartNext,
+}: TimerControlsProps) {
+  if (timerState === 'idle') {
+    return (
+      <div className="flex flex-col items-center gap-2">
+        <Button size="lg" className="min-w-[120px] btn-press" onClick={onStart}>
           Start
         </Button>
-      )}
+      </div>
+    );
+  }
+
+  if (timerState === 'transition') {
+    const nextLabel = suggestedNext ? PHASE_LABELS[suggestedNext] : 'Next';
+    return (
+      <div className="flex flex-col items-center gap-2">
+        <Button size="lg" className="min-w-[120px] btn-press" onClick={onStartNext}>
+          Start {nextLabel}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-xs text-muted-foreground"
+          onClick={onEndActivity}
+        >
+          End Activity
+        </Button>
+      </div>
+    );
+  }
+
+  // RUNNING or PAUSED
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <Button
+        size="lg"
+        className="min-w-[120px] btn-press"
+        onClick={timerState === 'running' ? onPause : onResume}
+      >
+        {timerState === 'running' ? 'Pause' : 'Resume'}
+      </Button>
+      <div className="flex gap-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-xs text-muted-foreground"
+          onClick={onSkip}
+        >
+          Skip
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-xs text-muted-foreground"
+          onClick={onEndActivity}
+        >
+          End Activity
+        </Button>
+      </div>
     </div>
   );
 }

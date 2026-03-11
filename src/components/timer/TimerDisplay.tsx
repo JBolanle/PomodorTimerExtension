@@ -1,27 +1,42 @@
 import { formatTime } from '@/lib/utils';
-import type { TimerMode } from '@/types';
-import type { Settings } from '@/types';
+import type { TimerMode, TimerStateEnum, Preset } from '@/types';
 
 interface TimerDisplayProps {
   remainingSeconds: number;
   mode: TimerMode;
-  settings: Settings;
-  running: boolean;
+  timerState: TimerStateEnum;
+  activePreset: Preset;
+  suggestedNext: TimerMode | null;
 }
 
-function getDefaultSeconds(mode: TimerMode, settings: Settings): number {
+function getDefaultSeconds(mode: TimerMode, preset: Preset): number {
   switch (mode) {
     case 'work':
-      return settings.workMinutes * 60;
+      return preset.workMinutes * 60;
     case 'shortBreak':
-      return settings.shortBreakMinutes * 60;
+      return preset.shortBreakMinutes * 60;
     case 'longBreak':
-      return settings.longBreakMinutes * 60;
+      return preset.longBreakMinutes * 60;
   }
 }
 
-export function TimerDisplay({ remainingSeconds, mode, settings, running }: TimerDisplayProps) {
-  const displaySeconds = running ? remainingSeconds : getDefaultSeconds(mode, settings);
+export function TimerDisplay({ remainingSeconds, mode, timerState, activePreset, suggestedNext }: TimerDisplayProps) {
+  let displaySeconds: number;
+
+  switch (timerState) {
+    case 'running':
+    case 'paused':
+      displaySeconds = remainingSeconds;
+      break;
+    case 'transition':
+      displaySeconds = suggestedNext ? getDefaultSeconds(suggestedNext, activePreset) : 0;
+      break;
+    case 'idle':
+    default:
+      displaySeconds = getDefaultSeconds(mode, activePreset);
+      break;
+  }
+
   const formatted = formatTime(displaySeconds);
   const [minutes, seconds] = formatted.split(':');
 

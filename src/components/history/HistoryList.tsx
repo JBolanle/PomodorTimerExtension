@@ -84,7 +84,14 @@ export function HistoryList({ records, onClear }: HistoryListProps) {
                   <span className="text-sm font-medium text-foreground">
                     {MODE_LABELS[record.mode]}
                   </span>
-                  <span className="text-sm text-muted-foreground">{record.duration} min</span>
+                  <span className="text-sm text-muted-foreground">
+                    {Math.round(record.actualDurationMs / 60000)} min
+                  </span>
+                  {record.completionType !== 'completed' && (
+                    <span className="text-xs text-muted-foreground/60 italic">
+                      {record.completionType}
+                    </span>
+                  )}
                 </div>
                 <span className="text-xs text-muted-foreground">{timeAgo(record.completedAt)}</span>
               </div>

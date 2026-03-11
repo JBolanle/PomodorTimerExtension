@@ -21,17 +21,6 @@ export function useHistory() {
     return onStorageChanged(STORAGE_KEY, (val) => setRecords(val as SessionRecord[]));
   }, []);
 
-  const addRecord = useCallback(async (record: Omit<SessionRecord, 'id'>) => {
-    const newRecord: SessionRecord = {
-      ...record,
-      id: crypto.randomUUID(),
-    };
-    const current = await getStorage<SessionRecord[]>(STORAGE_KEY, []);
-    const updated = [...current, newRecord];
-    await setStorage(STORAGE_KEY, updated);
-    setRecords(updated);
-  }, []);
-
   const clearHistory = useCallback(async () => {
     await setStorage(STORAGE_KEY, []);
     setRecords([]);
@@ -44,15 +33,17 @@ export function useHistory() {
     const todayRecords = records.filter((r) => r.completedAt >= today);
     const weekRecords = records.filter((r) => r.completedAt >= weekStart);
 
+    const toMinutes = (r: SessionRecord) => r.actualDurationMs / 60000;
+
     return {
       todaySessions: todayRecords.length,
       weekSessions: weekRecords.length,
       totalSessions: records.length,
-      todayMinutes: todayRecords.reduce((sum, r) => sum + r.duration, 0),
-      weekMinutes: weekRecords.reduce((sum, r) => sum + r.duration, 0),
-      totalMinutes: records.reduce((sum, r) => sum + r.duration, 0),
+      todayMinutes: Math.round(todayRecords.reduce((sum, r) => sum + toMinutes(r), 0)),
+      weekMinutes: Math.round(weekRecords.reduce((sum, r) => sum + toMinutes(r), 0)),
+      totalMinutes: Math.round(records.reduce((sum, r) => sum + toMinutes(r), 0)),
     };
   }, [records]);
 
-  return { records, addRecord, clearHistory, stats };
+  return { records, clearHistory, stats };
 }
