@@ -1,12 +1,11 @@
 import { NavLink } from 'react-router-dom';
-import { Timer, Settings, History, BarChart3 } from 'lucide-react';
+import { Timer, Settings, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { to: '/timer', label: 'Timer', icon: Timer },
   { to: '/settings', label: 'Settings', icon: Settings },
-  { to: '/history', label: 'History', icon: History },
-  { to: '/stats', label: 'Stats', icon: BarChart3 },
+  { to: '/history', label: 'Stats & History', icon: History },
 ];
 
 export function Sidebar() {

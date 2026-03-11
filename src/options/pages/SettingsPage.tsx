@@ -3,10 +3,11 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
 import { ThemePicker } from '@/components/settings/ThemePicker';
 
 export function SettingsPage() {
-  const { settings, updateSettings } = useSettings();
+  const { settings, updateSettings, resetSettings } = useSettings();
 
   return (
     <div>
@@ -107,6 +108,12 @@ export function SettingsPage() {
           <h3 className="text-sm font-medium text-foreground">Theme</h3>
           <ThemePicker />
         </section>
+
+        <Separator />
+
+        <Button variant="outline" onClick={resetSettings}>
+          Restore Defaults
+        </Button>
       </div>
     </div>
   );

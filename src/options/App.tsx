@@ -4,7 +4,6 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { SettingsPage } from './pages/SettingsPage';
 import { TimerPage } from './pages/TimerPage';
 import { HistoryPage } from './pages/HistoryPage';
-import { StatsPage } from './pages/StatsPage';
 
 export default function App() {
   useTheme();
@@ -19,7 +18,6 @@ export default function App() {
             <Route path="/timer" element={<TimerPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/history" element={<HistoryPage />} />
-            <Route path="/stats" element={<StatsPage />} />
           </Routes>
         </main>
       </div>

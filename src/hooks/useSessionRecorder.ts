@@ -1,13 +1,13 @@
 import { useEffect, useRef } from 'react';
-import { useTimerState } from './useTimerState';
 import { useHistory } from './useHistory';
-import { useSettings } from './useSettings';
-import type { TimerMode } from '@/types';
+import type { TimerMode, Settings } from '@/types';
 
-export function useSessionRecorder(mode: TimerMode) {
-  const { completedSessions } = useTimerState();
+export function useSessionRecorder(
+  mode: TimerMode,
+  completedSessions: number,
+  settings: Settings
+) {
   const { addRecord } = useHistory();
-  const { settings } = useSettings();
   const prevSessions = useRef(completedSessions);
 
   useEffect(() => {

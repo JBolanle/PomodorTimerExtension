@@ -14,7 +14,7 @@ export function TimerPage() {
   const { settings } = useSettings();
   const [mode, setMode] = useState<TimerMode>('work');
 
-  useSessionRecorder(mode);
+  useSessionRecorder(mode, completedSessions, settings);
 
   const handleStart = useCallback(() => {
     const minutes = mode === 'work'

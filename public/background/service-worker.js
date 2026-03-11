@@ -52,14 +52,17 @@ async function getState() {
 }
 
 async function handleTimerComplete() {
-  const data = await chrome.storage.local.get(['completedSessions']);
+  const data = await chrome.storage.local.get(['completedSessions', 'settings']);
   const sessions = (data.completedSessions || 0) + 1;
   await chrome.storage.local.set({ completedSessions: sessions, running: false, endTime: null });
 
-  chrome.notifications.create({
-    type: 'basic',
-    iconUrl: '../icons/icon128.png',
-    title: 'Pomodoro Timer',
-    message: 'Session complete! Time for a break.',
-  });
+  const notificationsEnabled = data.settings?.notificationsEnabled ?? true;
+  if (notificationsEnabled) {
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+      title: 'Pomodoro Timer',
+      message: 'Session complete! Time for a break.',
+    });
+  }
 }

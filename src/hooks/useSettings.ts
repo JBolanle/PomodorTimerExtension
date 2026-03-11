@@ -13,11 +13,18 @@ export function useSettings() {
     return onStorageChanged(STORAGE_KEY, (val) => setSettingsState(val as Settings));
   }, []);
 
-  const updateSettings = useCallback(async (patch: Partial<Settings>) => {
-    const updated = { ...settings, ...patch };
-    setSettingsState(updated);
-    await setStorage(STORAGE_KEY, updated);
-  }, [settings]);
+  const updateSettings = useCallback((patch: Partial<Settings>) => {
+    setSettingsState((prev) => {
+      const updated = { ...prev, ...patch };
+      setStorage(STORAGE_KEY, updated);
+      return updated;
+    });
+  }, []);
 
-  return { settings, updateSettings };
+  const resetSettings = useCallback(() => {
+    setSettingsState(DEFAULTS);
+    setStorage(STORAGE_KEY, DEFAULTS);
+  }, []);
+
+  return { settings, updateSettings, resetSettings };
 }
