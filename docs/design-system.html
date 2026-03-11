@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pomodoro Timer — Design System</title>
+<style>
+  /* ============================================================
+     RESET & BASE
+     ============================================================ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  @font-face {
+    font-family: 'SystemBold';
+    src: local('SF Pro Display'), local('Segoe UI'), local('Helvetica Neue');
+    font-weight: 800;
+  }
+
+  :root {
+    --page-bg: #111113;
+    --page-fg: #b0b0b8;
+    --page-heading: #ffffff;
+    --card-radius: 24px;
+    --transition-snappy: 180ms cubic-bezier(.4, 0, .2, 1);
+  }
+
+  html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background: var(--page-bg);
+    color: var(--page-fg);
+    font-family: 'SF Pro Display', 'Segoe UI', 'Helvetica Neue', system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* ============================================================
+     PAGE HEADER
+     ============================================================ */
+  .page-header {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 64px 40px 32px;
+  }
+
+  .page-header h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 900;
+    color: var(--page-heading);
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+
+  .page-header h1 span {
+    background: linear-gradient(135deg, #e94560, #ff7eb3);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .page-header p {
+    font-size: 1.05rem;
+    line-height: 1.65;
+    max-width: 640px;
+    color: #78788a;
+  }
+
+  .page-header .badge {
+    display: inline-block;
+    margin-bottom: 20px;
+    padding: 6px 14px;
+    border-radius: 100px;
+    background: rgba(233, 69, 96, 0.12);
+    color: #e94560;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  /* ============================================================
+     GRID
+     ============================================================ */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 20px 40px 80px;
+  }
+
+  @media (max-width: 1080px) {
+    .grid { grid-template-columns: 1fr; max-width: 480px; gap: 36px; }
+    .page-header { padding: 48px 24px 24px; }
+    .grid { padding: 20px 24px 60px; }
+  }
+
+  /* ============================================================
+     SHARED CARD STRUCTURE
+     ============================================================ */
+  .card {
+    border-radius: var(--card-radius);
+    padding: 44px 36px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: transform 320ms cubic-bezier(.22, 1, .36, 1);
+  }
+
+  .card:hover {
+    transform: translateY(-4px);
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .style-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .style-name {
+    font-size: 1.6rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+
+  .style-desc {
+    font-size: 0.78rem;
+    margin-bottom: 36px;
+    opacity: 0.55;
+    max-width: 240px;
+    line-height: 1.5;
+  }
+
+  .timer-display {
+    font-variant-numeric: tabular-nums;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 36px;
+    user-select: none;
+    letter-spacing: -0.02em;
+  }
+
+  .timer-display .colon {
+    display: inline-block;
+    animation: colonPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes colonPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .divider {
+    width: 48px;
+    height: 1px;
+    margin-bottom: 28px;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .btn {
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 14px 32px;
+    border-radius: 100px;
+    transition:
+      background var(--transition-snappy),
+      box-shadow var(--transition-snappy),
+      transform var(--transition-snappy);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn:active {
+    transform: scale(0.96);
+  }
+
+  .session-counter {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  .session-dots {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    justify-content: center;
+  }
+
+  .session-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    transition: background var(--transition-snappy), transform var(--transition-snappy);
+  }
+
+  .session-dot.active {
+    transform: scale(1.25);
+  }
+
+  /* ============================================================
+     STYLE 1 — OBSIDIAN
+     ============================================================ */
+  .card--obsidian {
+    background: #0a0a0a;
+    color: #ffffff;
+  }
+
+  .card--obsidian::before {
+    background: linear-gradient(180deg, rgba(233, 69, 96, 0.04) 0%, transparent 50%);
+  }
+
+  .card--obsidian .style-label { color: #e94560; }
+  .card--obsidian .style-name { color: #ffffff; }
+  .card--obsidian .style-desc { color: #666; }
+
+  .card--obsidian .timer-display {
+    font-size: clamp(64px, 8vw, 96px);
+    color: #ffffff;
+    text-shadow:
+      /* 3D chrome extrusion — dark bevel */
+      0 1px 0 #ccc,
+      0 2px 0 #bbb,
+      0 3px 0 #999,
+      0 4px 0 #888,
+      0 5px 0 #777,
+      0 6px 0 #666,
+      0 7px 0 #555,
+      0 8px 0 #444,
+      /* ambient shadow */
+      0 12px 24px rgba(0, 0, 0, 0.8),
+      0 4px 6px rgba(0, 0, 0, 0.5);
+  }
+
+  .card--obsidian .divider { background: rgba(233, 69, 96, 0.3); }
+
+  .card--obsidian .btn--primary {
+    background: #e94560;
+    color: #ffffff;
+    box-shadow: 0 0 0 0 rgba(233, 69, 96, 0);
+  }
+
+  .card--obsidian .btn--primary:hover {
+    background: #f25574;
+    box-shadow: 0 0 28px rgba(233, 69, 96, 0.45);
+  }
+
+  .card--obsidian .btn--secondary {
+    background: #1a1a1a;
+    color: #888;
+  }
+
+  .card--obsidian .btn--secondary:hover {
+    background: #222;
+    color: #bbb;
+  }
+
+  .card--obsidian .session-counter { color: #555; }
+
+  .card--obsidian .session-dot {
+    background: #222;
+  }
+
+  .card--obsidian .session-dot.active {
+    background: #e94560;
+    box-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
+  }
+
+  /* ============================================================
+     STYLE 2 — EMBER
+     ============================================================ */
+  .card--ember {
+    background: #1a1200;
+    color: #f5c542;
+  }
+
+  .card--ember::before {
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(245, 197, 66, 0.06) 0%, transparent 60%);
+  }
+
+  .card--ember .style-label { color: #d4a017; }
+  .card--ember .style-name { color: #f5c542; }
+  .card--ember .style-desc { color: #7a6520; }
+
+  .card--ember .timer-display {
+    font-size: clamp(64px, 8vw, 96px);
+    background: linear-gradient(180deg, #ffd86e 0%, #d4a017 50%, #a67c00 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 2px 0 #3d2e00)
+            drop-shadow(0 4px 0 #2a1f00)
+            drop-shadow(0 6px 0 #1a1300)
+            drop-shadow(0 10px 20px rgba(0, 0, 0, 0.7));
+    position: relative;
+  }
+
+  /* Ember glow behind the timer */
+  .card--ember .timer-wrap {
+    position: relative;
+  }
+
+  .card--ember .timer-wrap::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px;
+    height: 80px;
+    background: radial-gradient(ellipse, rgba(245, 197, 66, 0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .card--ember .divider { background: rgba(212, 160, 23, 0.25); }
+
+  .card--ember .btn--primary {
+    background: linear-gradient(180deg, #f5c542, #d4a017);
+    color: #1a1200;
+    box-shadow: 0 2px 12px rgba(245, 197, 66, 0.15);
+  }
+
+  .card--ember .btn--primary:hover {
+    background: linear-gradient(180deg, #ffd86e, #e8b420);
+    box-shadow: 0 4px 24px rgba(245, 197, 66, 0.3);
+  }
+
+  .card--ember .btn--secondary {
+    background: #2a1f00;
+    color: #7a6520;
+  }
+
+  .card--ember .btn--secondary:hover {
+    background: #3d2e00;
+    color: #d4a017;
+  }
+
+  .card--ember .session-counter { color: #5a4510; }
+
+  .card--ember .session-dot {
+    background: #2a1f00;
+  }
+
+  .card--ember .session-dot.active {
+    background: #f5c542;
+    box-shadow: 0 0 10px rgba(245, 197, 66, 0.4);
+  }
+
+  /* ============================================================
+     STYLE 3 — ARCTIC
+     ============================================================ */
+  .card--arctic {
+    background: #e8edf2;
+    color: #1a2a3a;
+  }
+
+  .card--arctic::before {
+    background: linear-gradient(180deg, rgba(74, 158, 255, 0.05) 0%, transparent 40%);
+  }
+
+  .card--arctic .style-label { color: #4a9eff; }
+  .card--arctic .style-name { color: #1a2a3a; }
+  .card--arctic .style-desc { color: #8a9ab0; }
+
+  .card--arctic .timer-display {
+    font-size: clamp(64px, 8vw, 96px);
+    color: #1a2a3a;
+    text-shadow:
+      /* Frosted inset effect — light recessed look */
+      0 1px 0 #f4f7fa,
+      0 2px 0 #edf1f5,
+      0 -1px 0 #c8d4e0,
+      0 -2px 1px #b0bfcf,
+      /* subtle blue tint highlight */
+      0 0 8px rgba(74, 158, 255, 0.08),
+      /* drop shadow for depth */
+      0 4px 8px rgba(26, 42, 58, 0.06),
+      0 8px 16px rgba(26, 42, 58, 0.04);
+  }
+
+  .card--arctic .divider { background: rgba(74, 158, 255, 0.2); }
+
+  .card--arctic .btn--primary {
+    background: #4a9eff;
+    color: #ffffff;
+    box-shadow: 0 2px 12px rgba(74, 158, 255, 0.2);
+  }
+
+  .card--arctic .btn--primary:hover {
+    background: #5eaaff;
+    box-shadow: 0 4px 24px rgba(74, 158, 255, 0.35);
+  }
+
+  .card--arctic .btn--secondary {
+    background: #dce3eb;
+    color: #8a9ab0;
+  }
+
+  .card--arctic .btn--secondary:hover {
+    background: #d0d9e4;
+    color: #5a6f88;
+  }
+
+  .card--arctic .session-counter { color: #a0b0c4; }
+
+  .card--arctic .session-dot {
+    background: #d0d9e4;
+  }
+
+  .card--arctic .session-dot.active {
+    background: #4a9eff;
+    box-shadow: 0 0 10px rgba(74, 158, 255, 0.35);
+  }
+
+  /* Colon animation color overrides */
+  .card--ember .colon {
+    -webkit-text-fill-color: #d4a017;
+  }
+
+  /* ============================================================
+     INTERACTIVE STATE CLASSES
+     ============================================================ */
+  .card[data-state="running"] .btn--primary .btn-label-start { display: none; }
+  .card[data-state="running"] .btn--primary .btn-label-stop  { display: inline; }
+  .card[data-state="idle"] .btn--primary .btn-label-start    { display: inline; }
+  .card[data-state="idle"] .btn--primary .btn-label-stop     { display: none; }
+
+  /* ============================================================
+     NOISE TEXTURE OVERLAY (subtle grain)
+     ============================================================ */
+  .card--obsidian::after,
+  .card--ember::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 128px 128px;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <div class="badge">Design System</div>
+  <h1>Pomodoro Timer<br><span>Style Exploration</span></h1>
+  <p>Three visual directions inspired by the Not Boring design philosophy — oversized 3D typography, bold palettes, minimal chrome. Each mockup is interactive: click Start to run a timer.</p>
+</header>
+
+<div class="grid">
+
+  <!-- ===================== OBSIDIAN ===================== -->
+  <div class="card card--obsidian" data-state="idle" data-style="obsidian">
+    <span class="style-label">Style 01</span>
+    <h2 class="style-name">Obsidian</h2>
+    <p class="style-desc">Dramatic, premium, editorial. Chrome-extruded numerals on pure black.</p>
+
+    <div class="timer-wrap">
+      <div class="timer-display">
+        <span class="mins">25</span><span class="colon">:</span><span class="secs">00</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="btn-row">
+      <button class="btn btn--primary" data-action="toggle">
+        <span class="btn-label-start">Start</span>
+        <span class="btn-label-stop">Stop</span>
+      </button>
+      <button class="btn btn--secondary" data-action="reset">Reset</button>
+    </div>
+
+    <div class="session-counter">Session</div>
+    <div class="session-dots">
+      <div class="session-dot active"></div>
+      <div class="session-dot"></div>
+      <div class="session-dot"></div>
+      <div class="session-dot"></div>
+    </div>
+  </div>
+
+  <!-- ===================== EMBER ===================== -->
+  <div class="card card--ember" data-state="idle" data-style="ember">
+    <span class="style-label">Style 02</span>
+    <h2 class="style-name">Ember</h2>
+    <p class="style-desc">Warm, luxurious, golden. Gradient-lit numerals on deep umber.</p>
+
+    <div class="timer-wrap">
+      <div class="timer-display">
+        <span class="mins">25</span><span class="colon">:</span><span class="secs">00</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="btn-row">
+      <button class="btn btn--primary" data-action="toggle">
+        <span class="btn-label-start">Start</span>
+        <span class="btn-label-stop">Stop</span>
+      </button>
+      <button class="btn btn--secondary" data-action="reset">Reset</button>
+    </div>
+
+    <div class="session-counter">Session</div>
+    <div class="session-dots">
+      <div class="session-dot active"></div>
+      <div class="session-dot"></div>
+      <div class="session-dot"></div>
+      <div class="session-dot"></div>
+    </div>
+  </div>
+
+  <!-- ===================== ARCTIC ===================== -->
+  <div class="card card--arctic" data-state="idle" data-style="arctic">
+    <span class="style-label">Style 03</span>
+    <h2 class="style-name">Arctic</h2>
+    <p class="style-desc">Crisp, clean, premium-minimal. Frosted numerals on icy white.</p>
+
+    <div class="timer-wrap">
+      <div class="timer-display">
+        <span class="mins">25</span><span class="colon">:</span><span class="secs">00</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="btn-row">
+      <button class="btn btn--primary" data-action="toggle">
+        <span class="btn-label-start">Start</span>
+        <span class="btn-label-stop">Stop</span>
+      </button>
+      <button class="btn btn--secondary" data-action="reset">Reset</button>
+    </div>
+
+    <div class="session-counter">Session</div>
+    <div class="session-dots">
+      <div class="session-dot active"></div>
+      <div class="session-dot"></div>
+      <div class="session-dot"></div>
+      <div class="session-dot"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── Interactive timer logic for each card ──
+  document.querySelectorAll('.card').forEach(card => {
+    const WORK_SECONDS = 25 * 60;
+    let remaining = WORK_SECONDS;
+    let interval = null;
+    let session = 1;
+
+    const minsEl = card.querySelector('.mins');
+    const secsEl = card.querySelector('.secs');
+    const dots   = card.querySelectorAll('.session-dot');
+
+    function render() {
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      minsEl.textContent = String(m).padStart(2, '0');
+      secsEl.textContent = String(s).padStart(2, '0');
+    }
+
+    function updateDots() {
+      dots.forEach((d, i) => d.classList.toggle('active', i < session));
+    }
+
+    card.querySelector('[data-action="toggle"]').addEventListener('click', () => {
+      if (card.dataset.state === 'idle') {
+        card.dataset.state = 'running';
+        interval = setInterval(() => {
+          if (remaining <= 0) {
+            clearInterval(interval);
+            interval = null;
+            card.dataset.state = 'idle';
+            session = session >= 4 ? 1 : session + 1;
+            remaining = WORK_SECONDS;
+            updateDots();
+            render();
+            return;
+          }
+          remaining--;
+          render();
+        }, 1000);
+      } else {
+        card.dataset.state = 'idle';
+        clearInterval(interval);
+        interval = null;
+      }
+    });
+
+    card.querySelector('[data-action="reset"]').addEventListener('click', () => {
+      clearInterval(interval);
+      interval = null;
+      card.dataset.state = 'idle';
+      remaining = WORK_SECONDS;
+      render();
+    });
+  });
+</script>
+
+</body>
+</html>
