@@ -26,14 +26,14 @@ export function TimerDisplay({ remainingSeconds, mode, settings, running }: Time
   const [minutes, seconds] = formatted.split(':');
 
   return (
-    <div className="flex items-center justify-center py-6 select-none">
-      <span className="text-7xl font-bold tracking-tight text-foreground tabular-nums">
+    <div className="timer-wrap flex items-center justify-center py-6 select-none">
+      <span className="timer-text text-7xl font-bold tracking-tight tabular-nums">
         {minutes}
       </span>
-      <span className="text-7xl font-bold tracking-tight text-foreground animate-pulse mx-0.5">
+      <span className="timer-text text-7xl font-bold tracking-tight colon-pulse mx-0.5">
         :
       </span>
-      <span className="text-7xl font-bold tracking-tight text-foreground tabular-nums">
+      <span className="timer-text text-7xl font-bold tracking-tight tabular-nums">
         {seconds}
       </span>
     </div>

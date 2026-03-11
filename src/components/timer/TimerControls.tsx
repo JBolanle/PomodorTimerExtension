@@ -13,7 +13,7 @@ export function TimerControls({ running, onStart, onStop }: TimerControlsProps) 
         <Button
           variant="destructive"
           size="lg"
-          className="min-w-[120px]"
+          className="min-w-[120px] btn-press"
           onClick={onStop}
         >
           Stop
@@ -21,7 +21,7 @@ export function TimerControls({ running, onStart, onStop }: TimerControlsProps) 
       ) : (
         <Button
           size="lg"
-          className="min-w-[120px]"
+          className="min-w-[120px] btn-press"
           onClick={onStart}
         >
           Start

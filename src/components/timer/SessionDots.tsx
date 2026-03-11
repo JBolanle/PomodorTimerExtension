@@ -12,9 +12,9 @@ export function SessionDots({ completedSessions, total }: SessionDotsProps) {
         <span
           key={i}
           className={cn(
-            'h-2.5 w-2.5 rounded-full transition-colors',
+            'h-2.5 w-2.5 rounded-full transition-all',
             i < completedSessions
-              ? 'bg-primary'
+              ? 'bg-primary session-dot-active'
               : 'bg-muted-foreground/25'
           )}
         />

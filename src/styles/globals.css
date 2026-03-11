@@ -111,3 +111,86 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ─── Timer text effects per theme ─── */
+
+[data-theme="obsidian"] .timer-text {
+  color: #ffffff;
+  text-shadow:
+    0 1px 0 #ccc, 0 2px 0 #bbb, 0 3px 0 #999,
+    0 4px 0 #888, 0 5px 0 #777, 0 6px 0 #666,
+    0 7px 0 #555, 0 8px 0 #444,
+    0 12px 24px rgba(0, 0, 0, 0.8),
+    0 4px 6px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="ember"] .timer-text {
+  background: linear-gradient(180deg, #ffd86e 0%, #d4a017 50%, #a67c00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 2px 0 #3d2e00)
+          drop-shadow(0 4px 0 #2a1f00)
+          drop-shadow(0 6px 0 #1a1300)
+          drop-shadow(0 10px 20px rgba(0, 0, 0, 0.7));
+}
+
+[data-theme="arctic"] .timer-text,
+:root .timer-text {
+  color: #1a2a3a;
+  text-shadow:
+    0 1px 0 #f4f7fa, 0 2px 0 #edf1f5,
+    0 -1px 0 #c8d4e0, 0 -2px 1px #b0bfcf,
+    0 0 8px rgba(74, 158, 255, 0.08),
+    0 4px 8px rgba(26, 42, 58, 0.06),
+    0 8px 16px rgba(26, 42, 58, 0.04);
+}
+
+/* Ember glow behind timer */
+[data-theme="ember"] .timer-wrap {
+  position: relative;
+}
+[data-theme="ember"] .timer-wrap::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 80px;
+  background: radial-gradient(ellipse, rgba(245, 197, 66, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ─── Colon pulse animation ─── */
+
+@keyframes colonPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.colon-pulse {
+  animation: colonPulse 2s ease-in-out infinite;
+}
+
+/* ─── Session dot glow per theme ─── */
+
+[data-theme="obsidian"] .session-dot-active {
+  box-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
+}
+[data-theme="ember"] .session-dot-active {
+  box-shadow: 0 0 10px rgba(245, 197, 66, 0.4);
+}
+[data-theme="arctic"] .session-dot-active,
+:root .session-dot-active {
+  box-shadow: 0 0 10px rgba(74, 158, 255, 0.35);
+}
+
+/* ─── Button press effect ─── */
+
+.btn-press:active {
+  transform: scale(0.96);
+}
+.btn-press {
+  transition: transform 0.1s ease;
+}
