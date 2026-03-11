@@ -13,12 +13,12 @@ import { THEMES, THEME_META } from '@/lib/constants';
 import type { TimerMode } from '@/types';
 
 export default function App() {
-  const { running, remainingSeconds, completedSessions, startTimer, stopTimer } = useTimerState();
+  const { running, remainingSeconds, completedSessions, initialized, startTimer, stopTimer } = useTimerState();
   const { theme, setTheme } = useTheme();
   const { settings } = useSettings();
   const [mode, setMode] = useState<TimerMode>('work');
 
-  useSessionRecorder(mode, completedSessions, settings);
+  useSessionRecorder(mode, completedSessions, settings, initialized);
 
   const handleStart = useCallback(() => {
     const minutes = mode === 'work'

@@ -10,6 +10,7 @@ export function useTimerState() {
     running: false,
     completedSessions: 0,
   });
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -17,7 +18,10 @@ export function useTimerState() {
     const poll = async () => {
       try {
         const s = await getTimerState();
-        if (active) setState(s);
+        if (active) {
+          setState(s);
+          setInitialized(true);
+        }
       } catch {
         // Service worker may not be ready
       }
@@ -45,6 +49,7 @@ export function useTimerState() {
 
   return {
     ...state,
+    initialized,
     remainingSeconds,
     startTimer,
     stopTimer,
