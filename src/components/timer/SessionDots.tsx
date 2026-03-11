@@ -1,0 +1,24 @@
+import { cn } from '@/lib/utils';
+
+interface SessionDotsProps {
+  completedSessions: number;
+  total: number;
+}
+
+export function SessionDots({ completedSessions, total }: SessionDotsProps) {
+  return (
+    <div className="flex items-center gap-2">
+      {Array.from({ length: total }, (_, i) => (
+        <span
+          key={i}
+          className={cn(
+            'h-2.5 w-2.5 rounded-full transition-colors',
+            i < completedSessions
+              ? 'bg-primary'
+              : 'bg-muted-foreground/25'
+          )}
+        />
+      ))}
+    </div>
+  );
+}
