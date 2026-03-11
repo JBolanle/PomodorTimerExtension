@@ -17,6 +17,8 @@ export interface TimerState {
   lastCompletedDurationMs: number | null;
   activePresetId: string;
   autoStartNext: boolean;
+  totalPausedMs: number;
+  pausedAt: number | null;
 }
 
 export interface Preset {
@@ -31,6 +33,9 @@ export interface Preset {
 export interface Settings {
   notificationsEnabled: boolean;
   autoStartNext: boolean;
+  showBadge: boolean;
+  soundEnabled: boolean;
+  soundVolume: number;
 }
 
 export interface SessionRecord {

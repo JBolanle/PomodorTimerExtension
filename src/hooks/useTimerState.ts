@@ -23,6 +23,8 @@ const INITIAL_STATE: TimerState = {
   lastCompletedDurationMs: null,
   activePresetId: 'default',
   autoStartNext: false,
+  totalPausedMs: 0,
+  pausedAt: null,
 };
 
 export function useTimerState() {

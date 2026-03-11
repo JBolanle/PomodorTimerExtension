@@ -24,6 +24,9 @@ export default defineConfig({
           manifest.background = {
             scripts: [manifest.background.service_worker],
           };
+          manifest.permissions = manifest.permissions.filter(
+            (p: string) => p !== "offscreen",
+          );
           manifest.browser_specific_settings = {
             gecko: {
               id: "pomodoro-timer@example.com",

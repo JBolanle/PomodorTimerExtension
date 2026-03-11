@@ -12,6 +12,9 @@ export const DEFAULT_PRESET: Preset = {
 export const DEFAULTS: Settings = {
   notificationsEnabled: true,
   autoStartNext: false,
+  showBadge: true,
+  soundEnabled: true,
+  soundVolume: 1.0,
 };
 
 export const THEMES: Theme[] = ['arctic', 'obsidian', 'ember'];

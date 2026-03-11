@@ -3,6 +3,8 @@
 const POMODORO_ALARM = 'pomodoro-timer';
 const AUTO_START_ALARM = 'pomodoro-auto-start';
 const AUTO_START_DELAY_SEC = 3;
+const MAX_HISTORY = 1000;
+const BADGE_ALARM = 'pomodoro-badge';
 
 const DEFAULT_PRESET = {
   id: 'default',
@@ -12,6 +14,9 @@ const DEFAULT_PRESET = {
   longBreakMinutes: 15,
   sessionsBeforeLongBreak: 4,
 };
+
+// Cached badge setting (avoids reading storage on every 30s update)
+let showBadge = true;
 
 // In-memory state (restored from storage on wake)
 let timerState = {
@@ -25,7 +30,57 @@ let timerState = {
   lastCompletedDurationMs: null,
   activePresetId: 'default',
   autoStartNext: false,
+  totalPausedMs: 0,
+  pausedAt: null,
 };
+
+// --- Badge ---
+
+const BADGE_COLORS = {
+  work: '#e74c3c',
+  shortBreak: '#2ecc71',
+  longBreak: '#3498db',
+};
+
+function updateBadge() {
+  try {
+    if (!showBadge) {
+      chrome.action.setBadgeText({ text: '' });
+      return;
+    }
+
+    let remainingMs = 0;
+
+    if (timerState.state === 'running' && timerState.endTime) {
+      remainingMs = Math.max(0, timerState.endTime - Date.now());
+    } else if (timerState.state === 'paused' && timerState.remainingMs) {
+      remainingMs = timerState.remainingMs;
+    } else {
+      chrome.action.setBadgeText({ text: '' });
+      return;
+    }
+
+    const minutes = Math.ceil(remainingMs / 60000);
+    const text = minutes < 1 ? '<1' : String(minutes);
+
+    chrome.action.setBadgeText({ text });
+    chrome.action.setBadgeBackgroundColor({
+      color: BADGE_COLORS[timerState.currentPhase] || BADGE_COLORS.work,
+    });
+  } catch (err) {
+    console.error('[Pomodoro] Badge update failed:', err);
+  }
+}
+
+function startBadgeAlarm() {
+  chrome.alarms.clear(BADGE_ALARM).catch(() => {});
+  updateBadge();
+  chrome.alarms.create(BADGE_ALARM, { periodInMinutes: 0.5 }).catch(() => {});
+}
+
+function clearBadgeAlarm() {
+  chrome.alarms.clear(BADGE_ALARM).catch(() => {});
+}
 
 // --- Persistence ---
 
@@ -33,6 +88,7 @@ const STATE_KEYS = [
   'state', 'endTime', 'remainingMs', 'sessionStartedAt',
   'currentPhase', 'workSessionsCompleted', 'suggestedNext',
   'lastCompletedDurationMs', 'activePresetId', 'autoStartNext',
+  'totalPausedMs', 'pausedAt',
 ];
 
 async function persistState() {
@@ -40,72 +96,80 @@ async function persistState() {
   for (const key of STATE_KEYS) {
     data[key] = timerState[key];
   }
-  await chrome.storage.local.set(data);
+  try {
+    await chrome.storage.local.set(data);
+  } catch (err) {
+    console.error('[Pomodoro] Failed to persist state:', err);
+  }
 }
 
 async function loadState() {
   const data = await chrome.storage.local.get(STATE_KEYS);
   // Detect old schema (has 'running' boolean instead of 'state' string)
   if (data.state === undefined) {
-    const oldData = await chrome.storage.local.get(['running', 'paused', 'completedSessions', 'endTime', 'remainingMs', 'sessionTotalMs']);
-    timerState = {
-      state: 'idle',
-      endTime: oldData.endTime || null,
-      remainingMs: oldData.remainingMs || null,
-      sessionStartedAt: null,
-      currentPhase: 'work',
-      workSessionsCompleted: oldData.completedSessions || 0,
-      suggestedNext: null,
-      lastCompletedDurationMs: null,
-      activePresetId: 'default',
-      autoStartNext: false,
-    };
-    // Migrate state from old booleans
-    if (oldData.running && timerState.endTime) {
-      timerState.state = 'running';
-    } else if (oldData.paused && timerState.remainingMs) {
-      timerState.state = 'paused';
-    }
-    // Clean up old keys
-    await chrome.storage.local.remove(['running', 'paused', 'completedSessions', 'sessionTotalMs']);
-    await persistState();
-    // Migrate presets
-    const { presets } = await chrome.storage.local.get('presets');
-    if (!presets) {
-      // Migrate old settings to a preset
-      const { settings: oldSettings } = await chrome.storage.local.get('settings');
-      if (oldSettings && (oldSettings.workMinutes || oldSettings.shortBreakMinutes || oldSettings.longBreakMinutes)) {
-        const migratedPreset = {
-          ...DEFAULT_PRESET,
-          workMinutes: oldSettings.workMinutes ?? DEFAULT_PRESET.workMinutes,
-          shortBreakMinutes: oldSettings.shortBreakMinutes ?? DEFAULT_PRESET.shortBreakMinutes,
-          longBreakMinutes: oldSettings.longBreakMinutes ?? DEFAULT_PRESET.longBreakMinutes,
-          sessionsBeforeLongBreak: oldSettings.sessionsBeforeLongBreak ?? DEFAULT_PRESET.sessionsBeforeLongBreak,
-        };
-        await chrome.storage.local.set({ presets: [migratedPreset] });
-        // Migrate settings to new shape (only notificationsEnabled + autoStartNext)
-        await chrome.storage.local.set({
-          settings: {
-            notificationsEnabled: oldSettings.notificationsEnabled ?? true,
-            autoStartNext: false,
-          },
-        });
-      } else {
-        await chrome.storage.local.set({ presets: [DEFAULT_PRESET] });
+    try {
+      const oldData = await chrome.storage.local.get(['running', 'paused', 'completedSessions', 'endTime', 'remainingMs', 'sessionTotalMs']);
+      timerState = {
+        state: 'idle',
+        endTime: oldData.endTime || null,
+        remainingMs: oldData.remainingMs || null,
+        sessionStartedAt: null,
+        currentPhase: 'work',
+        workSessionsCompleted: oldData.completedSessions || 0,
+        suggestedNext: null,
+        lastCompletedDurationMs: null,
+        activePresetId: 'default',
+        autoStartNext: false,
+      };
+      // Migrate state from old booleans
+      if (oldData.running && timerState.endTime) {
+        timerState.state = 'running';
+      } else if (oldData.paused && timerState.remainingMs) {
+        timerState.state = 'paused';
       }
-    }
-    // Migrate old session history records
-    const { sessionHistory } = await chrome.storage.local.get('sessionHistory');
-    if (sessionHistory && sessionHistory.length > 0 && sessionHistory[0].duration !== undefined) {
-      const migrated = sessionHistory.map((r) => ({
-        id: r.id,
-        mode: r.mode,
-        plannedDurationMs: r.duration * 60000,
-        actualDurationMs: r.duration * 60000,
-        completionType: 'completed',
-        completedAt: r.completedAt,
-      }));
-      await chrome.storage.local.set({ sessionHistory: migrated });
+      // Clean up old keys
+      await chrome.storage.local.remove(['running', 'paused', 'completedSessions', 'sessionTotalMs']);
+      await persistState();
+      // Migrate presets
+      const { presets } = await chrome.storage.local.get('presets');
+      if (!presets) {
+        // Migrate old settings to a preset
+        const { settings: oldSettings } = await chrome.storage.local.get('settings');
+        if (oldSettings && (oldSettings.workMinutes || oldSettings.shortBreakMinutes || oldSettings.longBreakMinutes)) {
+          const migratedPreset = {
+            ...DEFAULT_PRESET,
+            workMinutes: oldSettings.workMinutes ?? DEFAULT_PRESET.workMinutes,
+            shortBreakMinutes: oldSettings.shortBreakMinutes ?? DEFAULT_PRESET.shortBreakMinutes,
+            longBreakMinutes: oldSettings.longBreakMinutes ?? DEFAULT_PRESET.longBreakMinutes,
+            sessionsBeforeLongBreak: oldSettings.sessionsBeforeLongBreak ?? DEFAULT_PRESET.sessionsBeforeLongBreak,
+          };
+          await chrome.storage.local.set({ presets: [migratedPreset] });
+          // Migrate settings to new shape (only notificationsEnabled + autoStartNext)
+          await chrome.storage.local.set({
+            settings: {
+              notificationsEnabled: oldSettings.notificationsEnabled ?? true,
+              autoStartNext: false,
+            },
+          });
+        } else {
+          await chrome.storage.local.set({ presets: [DEFAULT_PRESET] });
+        }
+      }
+      // Migrate old session history records
+      const { sessionHistory } = await chrome.storage.local.get('sessionHistory');
+      if (sessionHistory && sessionHistory.length > 0 && sessionHistory[0].duration !== undefined) {
+        const migrated = sessionHistory.map((r) => ({
+          id: r.id,
+          mode: r.mode,
+          plannedDurationMs: r.duration * 60000,
+          actualDurationMs: r.duration * 60000,
+          completionType: 'completed',
+          completedAt: r.completedAt,
+        }));
+        await chrome.storage.local.set({ sessionHistory: migrated });
+      }
+    } catch (err) {
+      console.error('[Pomodoro] Migration from old schema failed:', err);
     }
     return;
   }
@@ -120,22 +184,51 @@ async function loadState() {
 // --- Initialization & Recovery ---
 
 async function initialize() {
-  await loadState();
+  try {
+    await loadState();
+  } catch (err) {
+    console.error('[Pomodoro] Failed to load state, using defaults:', err);
+  }
+
+  // Load badge setting
+  try {
+    const { settings } = await chrome.storage.local.get('settings');
+    showBadge = settings?.showBadge ?? true;
+  } catch (err) {
+    console.error('[Pomodoro] Failed to load badge setting:', err);
+  }
 
   if (timerState.state === 'running') {
     if (timerState.endTime && timerState.endTime <= Date.now()) {
       // Timer completed while SW was dead
-      await handleTimerComplete();
+      await handleTimerComplete().catch((err) => console.error('[Pomodoro] Recovery handleTimerComplete failed:', err));
     } else if (timerState.endTime) {
       // Timer still running, recreate alarm
       const remainingMin = (timerState.endTime - Date.now()) / 60000;
-      chrome.alarms.create(POMODORO_ALARM, { delayInMinutes: Math.max(0.01, remainingMin) });
+      await chrome.alarms.create(POMODORO_ALARM, { delayInMinutes: Math.max(0.01, remainingMin) })
+        .catch((err) => console.error('[Pomodoro] Recovery alarm creation failed:', err));
     }
   }
   // PAUSED and TRANSITION states need no recovery action — they just wait for user input
+
+  // Restore badge
+  if (timerState.state === 'running') {
+    startBadgeAlarm();
+  } else if (timerState.state === 'paused') {
+    updateBadge();
+  }
 }
 
-initialize();
+initialize().catch((err) => console.error('[Pomodoro] initialize() failed:', err));
+
+// Update cached settings when they change
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.settings) {
+    const newSettings = changes.settings.newValue;
+    showBadge = newSettings?.showBadge ?? true;
+    updateBadge();
+  }
+});
 
 // --- Alarm Handlers ---
 
@@ -144,6 +237,8 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     handleTimerComplete();
   } else if (alarm.name === AUTO_START_ALARM) {
     handleAutoStart();
+  } else if (alarm.name === BADGE_ALARM) {
+    updateBadge();
   }
 });
 
@@ -152,7 +247,12 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const handler = messageHandlers[message.action];
   if (handler) {
-    handler(message).then(sendResponse);
+    handler(message)
+      .then(sendResponse)
+      .catch((err) => {
+        console.error(`[Pomodoro] handler "${message.action}" failed:`, err);
+        sendResponse({ success: false, error: err.message });
+      });
     return true; // async response
   }
 });
@@ -238,11 +338,23 @@ async function doStartTimer(phase, minutes) {
   timerState.sessionStartedAt = Date.now();
   timerState.suggestedNext = null;
   timerState.lastCompletedDurationMs = null;
+  timerState.totalPausedMs = 0;
+  timerState.pausedAt = null;
 
   await persistState();
-  chrome.alarms.create(POMODORO_ALARM, { delayInMinutes: minutes });
+  try {
+    await chrome.alarms.create(POMODORO_ALARM, { delayInMinutes: minutes });
+  } catch (err) {
+    console.error('[Pomodoro] Failed to create timer alarm:', err);
+    timerState.state = 'idle';
+    timerState.endTime = null;
+    timerState.sessionStartedAt = null;
+    await persistState().catch(() => {});
+    return { success: false, error: 'Failed to create alarm' };
+  }
   // Cancel any pending auto-start
-  chrome.alarms.clear(AUTO_START_ALARM);
+  chrome.alarms.clear(AUTO_START_ALARM).catch(() => {});
+  startBadgeAlarm();
   return { success: true };
 }
 
@@ -252,9 +364,12 @@ async function doPause() {
   timerState.state = 'paused';
   timerState.endTime = null;
   timerState.remainingMs = remaining;
+  timerState.pausedAt = Date.now();
 
   await persistState();
-  chrome.alarms.clear(POMODORO_ALARM);
+  chrome.alarms.clear(POMODORO_ALARM).catch(() => {});
+  clearBadgeAlarm();
+  updateBadge();
   return { success: true };
 }
 
@@ -265,9 +380,23 @@ async function doResume() {
   timerState.state = 'running';
   timerState.endTime = endTime;
   timerState.remainingMs = null;
+  if (timerState.pausedAt) {
+    timerState.totalPausedMs += Date.now() - timerState.pausedAt;
+  }
+  timerState.pausedAt = null;
 
   await persistState();
-  chrome.alarms.create(POMODORO_ALARM, { delayInMinutes: remaining / 60000 });
+  try {
+    await chrome.alarms.create(POMODORO_ALARM, { delayInMinutes: remaining / 60000 });
+  } catch (err) {
+    console.error('[Pomodoro] Failed to create alarm on resume:', err);
+    timerState.state = 'paused';
+    timerState.endTime = null;
+    timerState.remainingMs = remaining;
+    await persistState().catch(() => {});
+    return { success: false, error: 'Failed to create alarm' };
+  }
+  startBadgeAlarm();
   return { success: true };
 }
 
@@ -293,14 +422,17 @@ async function doSkip() {
   timerState.lastCompletedDurationMs = elapsedMs;
 
   await persistState();
-  chrome.alarms.clear(POMODORO_ALARM);
+  chrome.alarms.clear(POMODORO_ALARM).catch(() => {});
+  clearBadgeAlarm();
+  updateBadge();
 
   // Notify
   await sendNotification(getSkipMessage());
+  await playNotificationSound();
 
   // Auto-start if enabled
   if (timerState.autoStartNext) {
-    chrome.alarms.create(AUTO_START_ALARM, { delayInMinutes: AUTO_START_DELAY_SEC / 60 });
+    chrome.alarms.create(AUTO_START_ALARM, { delayInMinutes: AUTO_START_DELAY_SEC / 60 }).catch(() => {});
   }
 
   return { success: true };
@@ -324,10 +456,14 @@ async function doEndActivity() {
   timerState.workSessionsCompleted = 0;
   timerState.suggestedNext = null;
   timerState.lastCompletedDurationMs = null;
+  timerState.totalPausedMs = 0;
+  timerState.pausedAt = null;
 
   await persistState();
-  chrome.alarms.clear(POMODORO_ALARM);
-  chrome.alarms.clear(AUTO_START_ALARM);
+  chrome.alarms.clear(POMODORO_ALARM).catch(() => {});
+  chrome.alarms.clear(AUTO_START_ALARM).catch(() => {});
+  clearBadgeAlarm();
+  updateBadge();
   return { success: true };
 }
 
@@ -338,7 +474,9 @@ async function handleTimerComplete() {
 
   const preset = await getActivePreset();
   const plannedMs = getMinutesForPhase(timerState.currentPhase, preset) * 60000;
-  const actualMs = timerState.sessionStartedAt ? Date.now() - timerState.sessionStartedAt : plannedMs;
+  const actualMs = timerState.sessionStartedAt
+    ? (Date.now() - timerState.sessionStartedAt) - (timerState.totalPausedMs || 0)
+    : plannedMs;
 
   // Record completed session
   await recordSession(timerState.currentPhase, plannedMs, actualMs, 'completed');
@@ -359,6 +497,8 @@ async function handleTimerComplete() {
   timerState.lastCompletedDurationMs = actualMs;
 
   await persistState();
+  clearBadgeAlarm();
+  updateBadge();
 
   // Notify
   const { settings } = await chrome.storage.local.get('settings');
@@ -366,12 +506,13 @@ async function handleTimerComplete() {
   if (notificationsEnabled) {
     await sendNotification(getCompletionMessage());
   }
+  await playNotificationSound();
 
   // Auto-start if enabled
   const autoStart = settings?.autoStartNext ?? false;
   timerState.autoStartNext = autoStart;
   if (autoStart) {
-    chrome.alarms.create(AUTO_START_ALARM, { delayInMinutes: AUTO_START_DELAY_SEC / 60 });
+    chrome.alarms.create(AUTO_START_ALARM, { delayInMinutes: AUTO_START_DELAY_SEC / 60 }).catch(() => {});
   }
 }
 
@@ -400,7 +541,7 @@ function computeSuggestion() {
 
 function calculateElapsedMs() {
   if (timerState.state === 'running' && timerState.sessionStartedAt) {
-    return Date.now() - timerState.sessionStartedAt;
+    return (Date.now() - timerState.sessionStartedAt) - (timerState.totalPausedMs || 0);
   }
   if (timerState.state === 'paused' && timerState.sessionStartedAt && timerState.remainingMs != null) {
     // Total time minus remaining = elapsed
@@ -443,18 +584,25 @@ function getActivePresetSync() {
 }
 
 async function recordSession(mode, plannedDurationMs, actualDurationMs, completionType) {
-  const record = {
-    id: crypto.randomUUID(),
-    mode,
-    plannedDurationMs,
-    actualDurationMs: Math.max(0, actualDurationMs),
-    completionType,
-    completedAt: Date.now(),
-  };
-  const { sessionHistory } = await chrome.storage.local.get('sessionHistory');
-  const history = sessionHistory || [];
-  history.push(record);
-  await chrome.storage.local.set({ sessionHistory: history });
+  try {
+    const record = {
+      id: crypto.randomUUID(),
+      mode,
+      plannedDurationMs,
+      actualDurationMs: Math.max(0, actualDurationMs),
+      completionType,
+      completedAt: Date.now(),
+    };
+    const { sessionHistory } = await chrome.storage.local.get('sessionHistory');
+    const history = sessionHistory || [];
+    history.push(record);
+    if (history.length > MAX_HISTORY) {
+      history.splice(0, history.length - MAX_HISTORY);
+    }
+    await chrome.storage.local.set({ sessionHistory: history });
+  } catch (err) {
+    console.error('[Pomodoro] Failed to record session:', err);
+  }
 }
 
 function getCompletionMessage() {
@@ -475,11 +623,66 @@ function getSkipMessage() {
   }
 }
 
-async function sendNotification(message) {
-  chrome.notifications.create({
-    type: 'basic',
-    iconUrl: chrome.runtime.getURL('icons/icon128.png'),
-    title: 'Pomodoro Timer',
-    message,
+// --- Sound Playback ---
+
+let creatingOffscreen = null;
+
+async function ensureOffscreenDocument() {
+  const offscreenUrl = chrome.runtime.getURL('offscreen/offscreen.html');
+  const existingContexts = await chrome.runtime.getContexts({
+    contextTypes: ['OFFSCREEN_DOCUMENT'],
+    documentUrls: [offscreenUrl],
   });
+  if (existingContexts.length > 0) return;
+
+  if (creatingOffscreen) {
+    await creatingOffscreen;
+    return;
+  }
+
+  creatingOffscreen = chrome.offscreen.createDocument({
+    url: offscreenUrl,
+    reasons: ['AUDIO_PLAYBACK'],
+    justification: 'Play notification sound when timer completes',
+  });
+
+  await creatingOffscreen;
+  creatingOffscreen = null;
+}
+
+async function playNotificationSound() {
+  try {
+    const { settings } = await chrome.storage.local.get('settings');
+    const soundEnabled = settings?.soundEnabled ?? true;
+    if (!soundEnabled) return;
+
+    const volume = settings?.soundVolume ?? 1.0;
+
+    if (!chrome.offscreen) {
+      // Firefox fallback — no offscreen API
+      return;
+    }
+
+    await ensureOffscreenDocument();
+    await chrome.runtime.sendMessage({
+      action: 'playSound',
+      sound: 'sounds/notification.mp3',
+      volume,
+    });
+  } catch (err) {
+    console.error('[Pomodoro] Sound playback failed:', err);
+  }
+}
+
+async function sendNotification(message) {
+  try {
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+      title: 'Pomodoro Timer',
+      message,
+    });
+  } catch (err) {
+    console.error('[Pomodoro] Notification failed (permission denied?):', err);
+  }
 }

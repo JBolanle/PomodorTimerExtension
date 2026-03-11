@@ -157,6 +157,15 @@ export function SettingsPage() {
               onCheckedChange={(checked) => updateSettings({ autoStartNext: checked })}
             />
           </div>
+          <div className="flex items-center justify-between">
+            <label className="text-sm text-muted-foreground">
+              Show remaining time on icon
+            </label>
+            <Switch
+              checked={settings.showBadge}
+              onCheckedChange={(checked) => updateSettings({ showBadge: checked })}
+            />
+          </div>
         </section>
 
         <Separator />
@@ -175,6 +184,36 @@ export function SettingsPage() {
               }
             />
           </div>
+          <div className="flex items-center justify-between">
+            <label className="text-sm text-muted-foreground">
+              Play sound when timer ends
+            </label>
+            <Switch
+              checked={settings.soundEnabled}
+              onCheckedChange={(checked) =>
+                updateSettings({ soundEnabled: checked })
+              }
+            />
+          </div>
+          {settings.soundEnabled && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm text-muted-foreground">Volume</label>
+                <span className="text-sm font-medium tabular-nums">
+                  {Math.round(settings.soundVolume * 100)}%
+                </span>
+              </div>
+              <Slider
+                value={[settings.soundVolume * 100]}
+                onValueChange={([v]) =>
+                  updateSettings({ soundVolume: v / 100 })
+                }
+                min={0}
+                max={100}
+                step={5}
+              />
+            </div>
+          )}
         </section>
 
         <Separator />
