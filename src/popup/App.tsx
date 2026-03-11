@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useTimerState } from '@/hooks/useTimerState';
 import { useTheme } from '@/hooks/useTheme';
 import { useSettings } from '@/hooks/useSettings';
+import { useSessionRecorder } from '@/hooks/useSessionRecorder';
 import { TimerDisplay } from '@/components/timer/TimerDisplay';
 import { ModeSelector } from '@/components/timer/ModeSelector';
 import { TimerControls } from '@/components/timer/TimerControls';
@@ -16,6 +17,8 @@ export default function App() {
   const { theme, setTheme } = useTheme();
   const { settings } = useSettings();
   const [mode, setMode] = useState<TimerMode>('work');
+
+  useSessionRecorder(mode);
 
   const handleStart = useCallback(() => {
     const minutes = mode === 'work'
