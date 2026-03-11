@@ -2,7 +2,10 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { resolve } from "path";
-import { copyFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
+
+const browser = process.env.BROWSER || "chrome";
+const outDir = browser === "firefox" ? "dist-firefox" : "dist";
 
 export default defineConfig({
   root: "src",
@@ -13,9 +16,25 @@ export default defineConfig({
     {
       name: "copy-manifest",
       writeBundle() {
-        copyFileSync(
-          resolve(__dirname, "manifest.json"),
-          resolve(__dirname, "dist/manifest.json"),
+        const manifest = JSON.parse(
+          readFileSync(resolve(__dirname, "manifest.json"), "utf-8"),
+        );
+
+        if (browser === "firefox") {
+          manifest.background = {
+            scripts: [manifest.background.service_worker],
+          };
+          manifest.browser_specific_settings = {
+            gecko: {
+              id: "pomodoro-timer@example.com",
+              strict_min_version: "109.0",
+            },
+          };
+        }
+
+        writeFileSync(
+          resolve(__dirname, `${outDir}/manifest.json`),
+          JSON.stringify(manifest, null, 2),
         );
       },
     },
@@ -35,7 +54,7 @@ export default defineConfig({
         options: resolve(__dirname, "src/options/index.html"),
       },
     },
-    outDir: resolve(__dirname, "dist"),
+    outDir: resolve(__dirname, outDir),
     emptyOutDir: true,
   },
 });

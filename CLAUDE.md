@@ -11,13 +11,17 @@ Chrome/Firefox browser extension for a Pomodoro timer, built with Manifest V3. T
 ```bash
 bun install          # install dependencies
 bun run dev          # vite dev server (HMR for popup/options pages)
-bun run build        # production build → dist/
+bun run build        # production build → dist/ (Chrome)
+bun run build:firefox  # Firefox build → dist-firefox/
+bun run build:all      # build both Chrome and Firefox
 ```
 
-Load the extension in the browser from the `dist/` directory:
+Load the extension in the browser:
 
 - **Chrome**: `chrome://extensions` → Enable Developer Mode → Load unpacked → select `dist/`
-- **Firefox**: `about:debugging#/runtime/this-firefox` → Load Temporary Add-on → select `dist/manifest.json`
+- **Firefox**: `about:debugging#/runtime/this-firefox` → Load Temporary Add-on → select `dist-firefox/manifest.json`
+
+The build uses a `BROWSER` env var (`chrome` default, `firefox`) to transform the manifest at build time. Firefox gets `background.scripts` instead of `background.service_worker` and `browser_specific_settings.gecko`.
 
 No test framework is configured yet.
 
