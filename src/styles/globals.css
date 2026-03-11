@@ -105,6 +105,12 @@
   --radius: 0;
 }
 
+/* ─── Recharts tooltip fix ─── */
+
+.recharts-tooltip-wrapper {
+  outline: none;
+}
+
 @layer base {
   * {
     @apply border-border;

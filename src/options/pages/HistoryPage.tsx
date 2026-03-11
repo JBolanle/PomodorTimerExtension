@@ -3,6 +3,7 @@ import { Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { CollapsibleSection } from '@/components/history/CollapsibleSection';
 import { StatsOverview } from '@/components/history/StatsOverview';
+import { InsightsContent } from '@/components/history/InsightsContent';
 import { HistoryList } from '@/components/history/HistoryList';
 import { DateFilter } from '@/components/history/DateFilter';
 import { ExportDropdown } from '@/components/history/ExportDropdown';
@@ -25,6 +26,10 @@ export function HistoryPage() {
 
       <CollapsibleSection title="Statistics" badge={`${filteredRecords.length} sessions`}>
         <StatsOverview filteredSessions={filteredRecords} />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Insights" defaultOpen={true}>
+        <InsightsContent sessions={records} />
       </CollapsibleSection>
 
       <CollapsibleSection title="Session History">
