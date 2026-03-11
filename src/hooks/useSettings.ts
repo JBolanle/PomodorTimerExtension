@@ -9,7 +9,15 @@ export function useSettings() {
   const [settings, setSettingsState] = useState<Settings>(DEFAULTS);
 
   useEffect(() => {
-    getStorage<Settings>(STORAGE_KEY, DEFAULTS).then(setSettingsState);
+    getStorage<Settings>(STORAGE_KEY, DEFAULTS).then((loaded) => {
+      if (loaded.mode === undefined) {
+        const migrated = { ...loaded, mode: 'advanced' as const };
+        setStorage(STORAGE_KEY, migrated);
+        setSettingsState(migrated);
+      } else {
+        setSettingsState(loaded);
+      }
+    });
     return onStorageChanged(STORAGE_KEY, (val) => setSettingsState(val as Settings));
   }, []);
 

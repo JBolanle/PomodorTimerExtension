@@ -4,6 +4,8 @@ export type TimerMode = 'work' | 'shortBreak' | 'longBreak';
 
 export type TimerStateEnum = 'idle' | 'running' | 'paused' | 'transition';
 
+export type AppMode = 'simple' | 'advanced';
+
 export type CompletionType = 'completed' | 'skipped' | 'ended';
 
 export interface TimerState {
@@ -31,6 +33,7 @@ export interface Preset {
 }
 
 export interface Settings {
+  mode: AppMode;
   notificationsEnabled: boolean;
   autoStartNext: boolean;
   showBadge: boolean;

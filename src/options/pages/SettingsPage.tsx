@@ -1,19 +1,22 @@
 import { useState } from 'react';
 import { useSettings } from '@/hooks/useSettings';
 import { usePresets } from '@/hooks/usePresets';
+import { useAppMode } from '@/hooks/useAppMode';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { ThemePicker } from '@/components/settings/ThemePicker';
+import { ModeToggle } from '@/components/settings/ModeToggle';
 import type { Preset } from '@/types';
 
-function PresetEditor({ preset, onSave, onDelete, isDefault }: {
+function PresetEditor({ preset, onSave, onDelete, isDefault, readOnly }: {
   preset: Preset;
   onSave: (p: Preset) => void;
   onDelete?: (id: string) => void;
   isDefault: boolean;
+  readOnly?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(preset);
@@ -37,16 +40,18 @@ function PresetEditor({ preset, onSave, onDelete, isDefault }: {
             {preset.workMinutes}/{preset.shortBreakMinutes}/{preset.longBreakMinutes} min, {preset.sessionsBeforeLongBreak} sessions
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
-            Edit
-          </Button>
-          {!isDefault && onDelete && (
-            <Button variant="ghost" size="sm" onClick={() => onDelete(preset.id)}>
-              Delete
+        {!readOnly && (
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
+              Edit
             </Button>
-          )}
-        </div>
+            {!isDefault && onDelete && (
+              <Button variant="ghost" size="sm" onClick={() => onDelete(preset.id)}>
+                Delete
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -106,6 +111,7 @@ function PresetEditor({ preset, onSave, onDelete, isDefault }: {
 export function SettingsPage() {
   const { settings, updateSettings, resetSettings } = useSettings();
   const { presets, savePreset, removePreset } = usePresets();
+  const { mode, setMode, isAdvanced } = useAppMode();
 
   const handleAddPreset = () => {
     const newPreset: Preset = {
@@ -124,6 +130,14 @@ export function SettingsPage() {
       <PageHeader title="Settings" description="Customize your timer and preferences." />
 
       <div className="max-w-lg space-y-8">
+        {/* Mode */}
+        <section className="space-y-4">
+          <h3 className="text-sm font-medium text-foreground">Mode</h3>
+          <ModeToggle mode={mode} onChange={setMode} />
+        </section>
+
+        <Separator />
+
         {/* Presets */}
         <section className="space-y-4">
           <h3 className="text-sm font-medium text-foreground">Presets</h3>
@@ -135,40 +149,47 @@ export function SettingsPage() {
                 onSave={savePreset}
                 onDelete={removePreset}
                 isDefault={p.id === 'default'}
+                readOnly={!isAdvanced}
               />
             ))}
           </div>
-          <Button variant="outline" size="sm" onClick={handleAddPreset}>
-            Add Preset
-          </Button>
+          {isAdvanced && (
+            <Button variant="outline" size="sm" onClick={handleAddPreset}>
+              Add Preset
+            </Button>
+          )}
         </section>
 
         <Separator />
 
-        {/* Auto-start */}
-        <section className="space-y-4">
-          <h3 className="text-sm font-medium text-foreground">Behavior</h3>
-          <div className="flex items-center justify-between">
-            <label className="text-sm text-muted-foreground">
-              Auto-start next session
-            </label>
-            <Switch
-              checked={settings.autoStartNext}
-              onCheckedChange={(checked) => updateSettings({ autoStartNext: checked })}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <label className="text-sm text-muted-foreground">
-              Show remaining time on icon
-            </label>
-            <Switch
-              checked={settings.showBadge}
-              onCheckedChange={(checked) => updateSettings({ showBadge: checked })}
-            />
-          </div>
-        </section>
+        {/* Behavior (advanced only) */}
+        {isAdvanced && (
+          <>
+            <section className="space-y-4">
+              <h3 className="text-sm font-medium text-foreground">Behavior</h3>
+              <div className="flex items-center justify-between">
+                <label className="text-sm text-muted-foreground">
+                  Auto-start next session
+                </label>
+                <Switch
+                  checked={settings.autoStartNext}
+                  onCheckedChange={(checked) => updateSettings({ autoStartNext: checked })}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm text-muted-foreground">
+                  Show remaining time on icon
+                </label>
+                <Switch
+                  checked={settings.showBadge}
+                  onCheckedChange={(checked) => updateSettings({ showBadge: checked })}
+                />
+              </div>
+            </section>
 
-        <Separator />
+            <Separator />
+          </>
+        )}
 
         {/* Notifications */}
         <section className="space-y-4">

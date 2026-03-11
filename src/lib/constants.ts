@@ -10,6 +10,7 @@ export const DEFAULT_PRESET: Preset = {
 };
 
 export const DEFAULTS: Settings = {
+  mode: 'simple' as const,
   notificationsEnabled: true,
   autoStartNext: false,
   showBadge: true,
