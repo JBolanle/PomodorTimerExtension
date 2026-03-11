@@ -46,3 +46,5 @@ export interface SessionRecord {
   completionType: CompletionType;
   completedAt: number;
 }
+
+export type DateFilterOption = 'today' | 'week' | 'month' | 'all' | 'custom';

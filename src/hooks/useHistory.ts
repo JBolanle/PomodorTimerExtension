@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { getStorage, setStorage, onStorageChanged } from '@/lib/storage';
-import type { SessionRecord } from '@/types';
+import type { SessionRecord, DateFilterOption } from '@/types';
 
 const STORAGE_KEY = 'sessionHistory';
 
@@ -9,12 +9,27 @@ function startOfToday(): number {
   return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 }
 
-function sevenDaysAgo(): number {
-  return startOfToday() - 7 * 24 * 60 * 60 * 1000;
+function getDateRange(filter: DateFilterOption): { start: number; end: number } | null {
+  const now = Date.now();
+  const today = startOfToday();
+  switch (filter) {
+    case 'today':
+      return { start: today, end: now };
+    case 'week':
+      return { start: today - 7 * 24 * 60 * 60 * 1000, end: now };
+    case 'month':
+      return { start: today - 30 * 24 * 60 * 60 * 1000, end: now };
+    case 'all':
+      return null;
+    case 'custom':
+      return null;
+  }
 }
 
 export function useHistory() {
   const [records, setRecords] = useState<SessionRecord[]>([]);
+  const [filter, setFilter] = useState<DateFilterOption>('all');
+  const [customRange, setCustomRange] = useState<{ start: Date; end: Date } | null>(null);
 
   useEffect(() => {
     getStorage<SessionRecord[]>(STORAGE_KEY, []).then(setRecords);
@@ -26,24 +41,23 @@ export function useHistory() {
     setRecords([]);
   }, []);
 
-  const stats = useMemo(() => {
-    const today = startOfToday();
-    const weekStart = sevenDaysAgo();
+  const filteredRecords = useMemo(() => {
+    if (filter === 'custom' && customRange) {
+      const start = customRange.start.getTime();
+      const end = customRange.end.getTime();
+      return records.filter((r) => r.completedAt >= start && r.completedAt <= end);
+    }
+    const range = getDateRange(filter);
+    if (!range) return records;
+    return records.filter((r) => r.completedAt >= range.start && r.completedAt <= range.end);
+  }, [records, filter, customRange]);
 
-    const todayRecords = records.filter((r) => r.completedAt >= today);
-    const weekRecords = records.filter((r) => r.completedAt >= weekStart);
+  const handleFilterChange = useCallback((newFilter: DateFilterOption, range?: { start: Date; end: Date }) => {
+    setFilter(newFilter);
+    if (newFilter === 'custom' && range) {
+      setCustomRange(range);
+    }
+  }, []);
 
-    const toMinutes = (r: SessionRecord) => r.actualDurationMs / 60000;
-
-    return {
-      todaySessions: todayRecords.length,
-      weekSessions: weekRecords.length,
-      totalSessions: records.length,
-      todayMinutes: Math.round(todayRecords.reduce((sum, r) => sum + toMinutes(r), 0)),
-      weekMinutes: Math.round(weekRecords.reduce((sum, r) => sum + toMinutes(r), 0)),
-      totalMinutes: Math.round(records.reduce((sum, r) => sum + toMinutes(r), 0)),
-    };
-  }, [records]);
-
-  return { records, clearHistory, stats };
+  return { records, filteredRecords, clearHistory, filter, setFilter: handleFilterChange };
 }
