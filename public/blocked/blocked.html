@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stay Focused</title>
+  <link rel="stylesheet" href="blocked.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="icon">🎯</div>
+    <h1>Stay Focused!</h1>
+    <p id="blocked-url" class="blocked-url"></p>
+
+    <div class="timer-section">
+      <p class="timer-label">Time remaining in session</p>
+      <div id="timer-display" class="timer-display">--:--</div>
+    </div>
+
+    <p id="quote" class="quote"></p>
+
+    <button id="btn-back" class="btn-primary">Take Me Back</button>
+
+    <div class="escape-hatch">
+      <p class="escape-text">Really need to access this site?</p>
+      <button id="btn-allow" class="btn-secondary">Allow for 5 minutes</button>
+    </div>
+  </div>
+
+  <script src="blocked.js"></script>
+</body>
+</html>

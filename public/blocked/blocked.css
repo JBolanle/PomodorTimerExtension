@@ -1,0 +1,224 @@
+/* ─── CSS Custom Properties — Theme Defaults (Arctic) ─── */
+
+:root {
+  --blocked-bg: linear-gradient(135deg, hsl(214 25% 92%) 0%, hsl(214 20% 86%) 100%);
+  --blocked-text: hsl(214 25% 10%);
+  --blocked-muted: hsl(214 10% 40%);
+  --blocked-accent: hsl(213 100% 65%);
+  --blocked-card-bg: hsl(214 20% 96%);
+  --blocked-border: hsl(214 15% 82%);
+}
+
+[data-theme="arctic"] {
+  --blocked-bg: linear-gradient(135deg, hsl(214 25% 92%) 0%, hsl(214 20% 86%) 100%);
+  --blocked-text: hsl(214 25% 10%);
+  --blocked-muted: hsl(214 10% 40%);
+  --blocked-accent: hsl(213 100% 65%);
+  --blocked-card-bg: hsl(214 20% 96%);
+  --blocked-border: hsl(214 15% 82%);
+}
+
+[data-theme="obsidian"] {
+  --blocked-bg: linear-gradient(135deg, hsl(0 0% 4%) 0%, hsl(0 0% 8%) 100%);
+  --blocked-text: hsl(0 0% 93%);
+  --blocked-muted: hsl(0 0% 55%);
+  --blocked-accent: hsl(350 80% 58%);
+  --blocked-card-bg: hsl(0 0% 7%);
+  --blocked-border: hsl(0 0% 15%);
+}
+
+[data-theme="ember"] {
+  --blocked-bg: linear-gradient(135deg, hsl(43 100% 5%) 0%, hsl(43 60% 8%) 100%);
+  --blocked-text: hsl(43 15% 88%);
+  --blocked-muted: hsl(43 10% 50%);
+  --blocked-accent: hsl(43 75% 46%);
+  --blocked-card-bg: hsl(43 40% 8%);
+  --blocked-border: hsl(43 20% 16%);
+}
+
+/* ─── Base Reset ─── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ─── Page Layout ─── */
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--blocked-bg);
+  color: var(--blocked-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1.5rem;
+}
+
+/* ─── Container ─── */
+
+.container {
+  max-width: 500px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  text-align: center;
+}
+
+/* ─── Icon ─── */
+
+.icon {
+  font-size: 3.5rem;
+  line-height: 1;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.85;
+  }
+}
+
+/* ─── Heading ─── */
+
+h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--blocked-text);
+  letter-spacing: -0.02em;
+}
+
+/* ─── Blocked URL ─── */
+
+.blocked-url {
+  font-size: 0.9rem;
+  color: var(--blocked-muted);
+  word-break: break-all;
+}
+
+/* ─── Timer Section ─── */
+
+.timer-section {
+  background: var(--blocked-card-bg);
+  border: 1px solid var(--blocked-border);
+  border-radius: 12px;
+  padding: 1.25rem 2rem;
+  width: 100%;
+}
+
+.timer-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--blocked-muted);
+  margin-bottom: 0.5rem;
+}
+
+.timer-display {
+  font-size: 2.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--blocked-accent);
+  letter-spacing: 0.04em;
+}
+
+/* ─── Quote ─── */
+
+.quote {
+  font-size: 0.875rem;
+  color: var(--blocked-muted);
+  font-style: italic;
+  line-height: 1.6;
+  max-width: 420px;
+}
+
+/* ─── Buttons ─── */
+
+.btn-primary {
+  background: var(--blocked-accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+  width: 100%;
+  max-width: 280px;
+}
+
+.btn-primary:hover {
+  opacity: 0.88;
+}
+
+.btn-primary:active {
+  transform: scale(0.97);
+}
+
+/* ─── Escape Hatch ─── */
+
+.escape-hatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--blocked-border);
+  width: 100%;
+}
+
+.escape-text {
+  font-size: 0.8rem;
+  color: var(--blocked-muted);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--blocked-muted);
+  border: 1px solid var(--blocked-border);
+  border-radius: 8px;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-secondary:hover {
+  color: var(--blocked-text);
+  border-color: var(--blocked-muted);
+}
+
+/* ─── Responsive ─── */
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.6rem;
+  }
+
+  .timer-display {
+    font-size: 2.25rem;
+  }
+
+  .timer-section {
+    padding: 1rem 1.25rem;
+  }
+}
