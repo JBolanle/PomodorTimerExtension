@@ -13,7 +13,7 @@ import { usePresets } from '@/hooks/usePresets';
 import { Button } from '@/components/ui/button';
 
 export function HistoryPage() {
-  const { records, filteredRecords, clearHistory, filter, setFilter } = useHistory();
+  const { sessions, filteredSessions, clearHistory, filter, setFilter } = useHistory();
   const { presets } = usePresets();
   const [showClearModal, setShowClearModal] = useState(false);
 
@@ -21,15 +21,15 @@ export function HistoryPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <PageHeader title="History & Stats" description="View your completed sessions and productivity stats." />
-        <ExportDropdown sessions={records} presets={presets} disabled={records.length === 0} />
+        <ExportDropdown sessions={sessions} presets={presets} disabled={sessions.length === 0} />
       </div>
 
-      <CollapsibleSection title="Statistics" badge={`${filteredRecords.length} sessions`}>
-        <StatsOverview filteredSessions={filteredRecords} />
+      <CollapsibleSection title="Statistics" badge={`${filteredSessions.length} sessions`}>
+        <StatsOverview filteredSessions={filteredSessions} />
       </CollapsibleSection>
 
       <CollapsibleSection title="Insights" defaultOpen={true}>
-        <InsightsContent sessions={records} />
+        <InsightsContent sessions={sessions} />
       </CollapsibleSection>
 
       <CollapsibleSection title="Session History">
@@ -39,19 +39,19 @@ export function HistoryPage() {
             variant="ghost"
             size="sm"
             className="text-muted-foreground"
-            disabled={records.length === 0}
+            disabled={sessions.length === 0}
             onClick={() => setShowClearModal(true)}
           >
             <Trash2 className="mr-1 h-4 w-4" />
             Clear
           </Button>
         </div>
-        <HistoryList sessions={filteredRecords} />
+        <HistoryList sessions={filteredSessions} />
       </CollapsibleSection>
 
       {showClearModal && (
         <ClearHistoryModal
-          sessionCount={records.length}
+          sessionCount={sessions.length}
           onConfirm={() => { clearHistory(); setShowClearModal(false); }}
           onCancel={() => setShowClearModal(false)}
         />

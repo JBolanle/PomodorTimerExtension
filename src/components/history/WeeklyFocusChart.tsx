@@ -8,10 +8,10 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
-import { SessionRecord } from '@/types';
+import type { Session } from '@/types';
 
 interface WeeklyFocusChartProps {
-  sessions: SessionRecord[];
+  sessions: Session[];
 }
 
 export function WeeklyFocusChart({ sessions }: WeeklyFocusChartProps) {
@@ -90,9 +90,9 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<
           : 'No sessions'
         }
       </div>
-      {data.sessions > 0 && (
+      {data.sessionCount > 0 && (
         <div className="text-muted-foreground">
-          {data.sessions} session{data.sessions !== 1 ? 's' : ''}
+          {data.sessionCount} session{data.sessionCount !== 1 ? 's' : ''}
         </div>
       )}
     </div>
@@ -104,11 +104,11 @@ interface DayData {
   label: string;
   fullDate: string;
   minutes: number;
-  sessions: number;
+  sessionCount: number;
   isToday: boolean;
 }
 
-function getLast7DaysData(sessions: SessionRecord[]): DayData[] {
+function getLast7DaysData(sessions: Session[]): DayData[] {
   const days: DayData[] = [];
   const today = new Date();
 
@@ -118,12 +118,12 @@ function getLast7DaysData(sessions: SessionRecord[]): DayData[] {
     const dateKey = date.toISOString().split('T')[0];
 
     const daySessions = sessions.filter(s => {
-      const sessionDate = new Date(s.completedAt).toISOString().split('T')[0];
+      const sessionDate = new Date(s.startedAt).toISOString().split('T')[0];
       return sessionDate === dateKey;
     });
 
     const minutes = Math.round(
-      daySessions.reduce((sum, s) => sum + s.actualDurationMs, 0) / 60000
+      daySessions.reduce((sum, s) => sum + s.totalFocusMs, 0) / 60000
     );
 
     days.push({
@@ -135,7 +135,7 @@ function getLast7DaysData(sessions: SessionRecord[]): DayData[] {
         day: 'numeric',
       }),
       minutes,
-      sessions: daySessions.length,
+      sessionCount: daySessions.length,
       isToday: i === 0,
     });
   }

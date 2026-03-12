@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { getStorage, setStorage, onStorageChanged } from '@/lib/storage';
-import type { SessionRecord, DateFilterOption } from '@/types';
+import type { Session, DateFilterOption } from '@/types';
 
-const STORAGE_KEY = 'sessionHistory';
+const STORAGE_KEY = 'sessions';
 
 function startOfToday(): number {
   const now = new Date();
@@ -27,30 +27,30 @@ function getDateRange(filter: DateFilterOption): { start: number; end: number } 
 }
 
 export function useHistory() {
-  const [records, setRecords] = useState<SessionRecord[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [filter, setFilter] = useState<DateFilterOption>('all');
   const [customRange, setCustomRange] = useState<{ start: Date; end: Date } | null>(null);
 
   useEffect(() => {
-    getStorage<SessionRecord[]>(STORAGE_KEY, []).then(setRecords);
-    return onStorageChanged(STORAGE_KEY, (val) => setRecords(val as SessionRecord[]));
+    getStorage<Session[]>(STORAGE_KEY, []).then(setSessions);
+    return onStorageChanged(STORAGE_KEY, (val) => setSessions(val as Session[]));
   }, []);
 
   const clearHistory = useCallback(async () => {
     await setStorage(STORAGE_KEY, []);
-    setRecords([]);
+    setSessions([]);
   }, []);
 
-  const filteredRecords = useMemo(() => {
+  const filteredSessions = useMemo(() => {
     if (filter === 'custom' && customRange) {
       const start = customRange.start.getTime();
       const end = customRange.end.getTime();
-      return records.filter((r) => r.completedAt >= start && r.completedAt <= end);
+      return sessions.filter((s) => s.startedAt >= start && s.startedAt <= end);
     }
     const range = getDateRange(filter);
-    if (!range) return records;
-    return records.filter((r) => r.completedAt >= range.start && r.completedAt <= range.end);
-  }, [records, filter, customRange]);
+    if (!range) return sessions;
+    return sessions.filter((s) => s.startedAt >= range.start && s.startedAt <= range.end);
+  }, [sessions, filter, customRange]);
 
   const handleFilterChange = useCallback((newFilter: DateFilterOption, range?: { start: Date; end: Date }) => {
     setFilter(newFilter);
@@ -59,5 +59,5 @@ export function useHistory() {
     }
   }, []);
 
-  return { records, filteredRecords, clearHistory, filter, setFilter: handleFilterChange };
+  return { sessions, filteredSessions, clearHistory, filter, setFilter: handleFilterChange };
 }

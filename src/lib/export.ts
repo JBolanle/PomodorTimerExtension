@@ -1,4 +1,4 @@
-import type { SessionRecord, Preset } from '@/types';
+import type { Session, Preset } from '@/types';
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -11,9 +11,9 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-export function exportToJSON(sessions: SessionRecord[], presets: Preset[]) {
+export function exportToJSON(sessions: Session[], presets: Preset[]) {
   const data = {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     sessions,
     presets,
@@ -23,15 +23,17 @@ export function exportToJSON(sessions: SessionRecord[], presets: Preset[]) {
   downloadBlob(blob, `pomodoro-backup-${date}.json`);
 }
 
-export function exportToCSV(sessions: SessionRecord[]) {
-  const headers = ['id', 'mode', 'planned_duration_min', 'actual_duration_min', 'completion_type', 'completed_at'];
+export function exportToCSV(sessions: Session[]) {
+  const headers = ['session_id', 'started_at', 'ended_at', 'status', 'total_focus_min', 'total_break_min', 'work_count', 'break_count'];
   const rows = sessions.map((s) => [
     s.id,
-    s.mode,
-    (s.plannedDurationMs / 60000).toFixed(1),
-    (s.actualDurationMs / 60000).toFixed(1),
-    s.completionType,
-    new Date(s.completedAt).toISOString(),
+    new Date(s.startedAt).toISOString(),
+    s.endedAt ? new Date(s.endedAt).toISOString() : '',
+    s.status,
+    (s.totalFocusMs / 60000).toFixed(1),
+    (s.totalBreakMs / 60000).toFixed(1),
+    s.phases.filter(p => p.mode === 'work').length,
+    s.phases.filter(p => p.mode !== 'work').length,
   ]);
   const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });

@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
-import type { SessionRecord } from '@/types';
+import type { Session } from '@/types';
 
 interface StatsOverviewProps {
-  filteredSessions: SessionRecord[];
+  filteredSessions: Session[];
 }
 
 function formatDuration(totalMinutes: number): string {
@@ -26,30 +26,30 @@ function StatCard({ label, value, detail }: { label: string; value: string; deta
 
 export function StatsOverview({ filteredSessions }: StatsOverviewProps) {
   const stats = useMemo(() => {
-    const workSessions = filteredSessions.filter((s) => s.mode === 'work');
-    const completedWork = workSessions.filter((s) => s.completionType === 'completed');
-    const breakSessions = filteredSessions.filter((s) => s.mode !== 'work');
-
-    const totalFocusMs = workSessions.reduce((sum, s) => sum + s.actualDurationMs, 0);
+    const totalFocusMs = filteredSessions.reduce((sum, s) => sum + s.totalFocusMs, 0);
     const totalFocusMin = Math.round(totalFocusMs / 60000);
-    const avgSessionMin = workSessions.length > 0 ? Math.round(totalFocusMin / workSessions.length) : 0;
-    const completionRate = workSessions.length > 0 ? Math.round((completedWork.length / workSessions.length) * 100) : 0;
+    const completed = filteredSessions.filter((s) => s.status === 'completed');
+    const completionRate = filteredSessions.length > 0
+      ? Math.round((completed.length / filteredSessions.length) * 100)
+      : 0;
+    const avgFocusMin = filteredSessions.length > 0
+      ? Math.round(totalFocusMin / filteredSessions.length)
+      : 0;
 
     return {
       totalFocusTime: formatDuration(totalFocusMin),
-      completedCount: completedWork.length,
-      avgSession: `${avgSessionMin}m`,
+      sessionCount: filteredSessions.length,
+      avgSession: `${avgFocusMin}m`,
       completionRate: `${completionRate}%`,
-      breaksTaken: breakSessions.length,
     };
   }, [filteredSessions]);
 
   return (
     <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
       <StatCard label="Focus Time" value={stats.totalFocusTime} detail="total work time" />
-      <StatCard label="Completed" value={String(stats.completedCount)} detail="work sessions" />
-      <StatCard label="Avg Session" value={stats.avgSession} detail="per work session" />
-      <StatCard label="Completion" value={stats.completionRate} detail="of work sessions" />
+      <StatCard label="Sessions" value={String(stats.sessionCount)} detail="total sessions" />
+      <StatCard label="Avg Focus" value={stats.avgSession} detail="per session" />
+      <StatCard label="Completion" value={stats.completionRate} detail="completed naturally" />
     </div>
   );
 }

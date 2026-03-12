@@ -4,6 +4,8 @@ export type TimerMode = 'work' | 'shortBreak' | 'longBreak';
 
 export type TimerStateEnum = 'idle' | 'running' | 'paused' | 'transition';
 
+export type AppMode = 'simple' | 'advanced';
+
 export type CompletionType = 'completed' | 'skipped' | 'ended';
 
 export interface TimerState {
@@ -31,6 +33,7 @@ export interface Preset {
 }
 
 export interface Settings {
+  mode: AppMode;
   notificationsEnabled: boolean;
   autoStartNext: boolean;
   showBadge: boolean;
@@ -38,13 +41,26 @@ export interface Settings {
   soundVolume: number;
 }
 
-export interface SessionRecord {
+export interface PhaseRecord {
   id: string;
   mode: TimerMode;
   plannedDurationMs: number;
   actualDurationMs: number;
   completionType: CompletionType;
+  startedAt: number;
   completedAt: number;
+}
+
+export interface Session {
+  id: string;
+  startedAt: number;
+  endedAt: number | null;
+  status: 'active' | 'completed' | 'ended';
+  phases: PhaseRecord[];
+  totalFocusMs: number;
+  totalBreakMs: number;
+  presetId: string;
+  presetName: string;
 }
 
 export type DateFilterOption = 'today' | 'week' | 'month' | 'all' | 'custom';

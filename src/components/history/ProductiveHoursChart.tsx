@@ -8,10 +8,10 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
-import { SessionRecord } from '@/types';
+import type { Session } from '@/types';
 
 interface ProductiveHoursChartProps {
-  sessions: SessionRecord[];
+  sessions: Session[];
 }
 
 export function ProductiveHoursChart({ sessions }: ProductiveHoursChartProps) {
@@ -81,7 +81,7 @@ function HourTooltip({ active, payload }: { active?: boolean; payload?: Array<{ 
       <div className="font-medium">{data.fullLabel}</div>
       <div className="text-muted-foreground">
         {data.minutes > 0
-          ? `${data.minutes}m focus · ${data.sessions} sessions`
+          ? `${data.minutes}m focus · ${data.sessionCount} sessions`
           : 'No sessions'
         }
       </div>
@@ -94,20 +94,20 @@ interface HourData {
   label: string;
   fullLabel: string;
   minutes: number;
-  sessions: number;
+  sessionCount: number;
 }
 
-function getHourlyData(sessions: SessionRecord[]): HourData[] {
+function getHourlyData(sessions: Session[]): HourData[] {
   const hours: HourData[] = [];
 
   for (let hour = 6; hour <= 23; hour++) {
     const hourSessions = sessions.filter(s => {
-      const sessionHour = new Date(s.completedAt).getHours();
+      const sessionHour = new Date(s.startedAt).getHours();
       return sessionHour === hour;
     });
 
     const minutes = Math.round(
-      hourSessions.reduce((sum, s) => sum + s.actualDurationMs, 0) / 60000
+      hourSessions.reduce((sum, s) => sum + s.totalFocusMs, 0) / 60000
     );
 
     hours.push({
@@ -115,7 +115,7 @@ function getHourlyData(sessions: SessionRecord[]): HourData[] {
       label: formatHourShort(hour),
       fullLabel: formatHourFull(hour),
       minutes,
-      sessions: hourSessions.length,
+      sessionCount: hourSessions.length,
     });
   }
 

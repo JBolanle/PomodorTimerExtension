@@ -3,7 +3,7 @@
 const POMODORO_ALARM = 'pomodoro-timer';
 const AUTO_START_ALARM = 'pomodoro-auto-start';
 const AUTO_START_DELAY_SEC = 3;
-const MAX_HISTORY = 1000;
+const MAX_SESSIONS = 200;
 const BADGE_ALARM = 'pomodoro-badge';
 
 const DEFAULT_PRESET = {
@@ -33,6 +33,61 @@ let timerState = {
   totalPausedMs: 0,
   pausedAt: null,
 };
+
+// --- Session Grouping ---
+
+let currentSession = null;
+
+function createNewSession(preset) {
+  currentSession = {
+    id: crypto.randomUUID(),
+    startedAt: Date.now(),
+    endedAt: null,
+    status: 'active',
+    phases: [],
+    totalFocusMs: 0,
+    totalBreakMs: 0,
+    presetId: preset.id,
+    presetName: preset.name,
+  };
+}
+
+function addPhaseToCurrentSession(mode, plannedMs, actualMs, completionType, startedAt) {
+  if (!currentSession) return;
+  const phase = {
+    id: crypto.randomUUID(),
+    mode,
+    plannedDurationMs: plannedMs,
+    actualDurationMs: Math.max(0, actualMs),
+    completionType,
+    startedAt,
+    completedAt: Date.now(),
+  };
+  currentSession.phases.push(phase);
+  if (mode === 'work') {
+    currentSession.totalFocusMs += phase.actualDurationMs;
+  } else {
+    currentSession.totalBreakMs += phase.actualDurationMs;
+  }
+}
+
+async function closeCurrentSession(status) {
+  if (!currentSession) return;
+  currentSession.endedAt = Date.now();
+  currentSession.status = status;
+  try {
+    const { sessions: stored } = await chrome.storage.local.get('sessions');
+    const sessions = stored || [];
+    sessions.push(currentSession);
+    if (sessions.length > MAX_SESSIONS) {
+      sessions.splice(0, sessions.length - MAX_SESSIONS);
+    }
+    await chrome.storage.local.set({ sessions });
+  } catch (err) {
+    console.error('[Pomodoro] Failed to save session:', err);
+  }
+  currentSession = null;
+}
 
 // --- Badge ---
 
@@ -96,6 +151,7 @@ async function persistState() {
   for (const key of STATE_KEYS) {
     data[key] = timerState[key];
   }
+  data.currentSession = currentSession;
   try {
     await chrome.storage.local.set(data);
   } catch (err) {
@@ -104,7 +160,7 @@ async function persistState() {
 }
 
 async function loadState() {
-  const data = await chrome.storage.local.get(STATE_KEYS);
+  const data = await chrome.storage.local.get([...STATE_KEYS, 'currentSession']);
   // Detect old schema (has 'running' boolean instead of 'state' string)
   if (data.state === undefined) {
     try {
@@ -179,6 +235,9 @@ async function loadState() {
       timerState[key] = data[key];
     }
   }
+  if (data.currentSession) {
+    currentSession = data.currentSession;
+  }
 }
 
 // --- Initialization & Recovery ---
@@ -188,6 +247,16 @@ async function initialize() {
     await loadState();
   } catch (err) {
     console.error('[Pomodoro] Failed to load state, using defaults:', err);
+  }
+
+  // One-time migration: clear old sessionHistory key
+  try {
+    const { sessionHistory } = await chrome.storage.local.get('sessionHistory');
+    if (sessionHistory) {
+      await chrome.storage.local.remove('sessionHistory');
+    }
+  } catch (err) {
+    console.error('[Pomodoro] Failed to clear old sessionHistory:', err);
   }
 
   // Load badge setting
@@ -229,6 +298,54 @@ chrome.storage.onChanged.addListener((changes, area) => {
     updateBadge();
   }
 });
+
+// --- Keyboard Shortcut Commands ---
+
+chrome.commands.onCommand.addListener(async (command) => {
+  switch (command) {
+    case 'toggle-timer':
+      await handleToggleTimer();
+      break;
+    case 'skip-phase':
+      await handleSkipShortcut();
+      break;
+  }
+});
+
+async function handleToggleTimer() {
+  if (timerState.state === 'running') {
+    await doPause();
+    showBadgeNotification('⏸');
+  } else if (timerState.state === 'paused') {
+    await doResume();
+    showBadgeNotification('▶');
+  } else if (timerState.state === 'idle') {
+    const preset = await getActivePreset();
+    await doStartTimer('work', preset.workMinutes);
+    showBadgeNotification('▶');
+  } else if (timerState.state === 'transition') {
+    const phase = timerState.suggestedNext || 'work';
+    const preset = await getActivePreset();
+    const minutes = getMinutesForPhase(phase, preset);
+    await doStartTimer(phase, minutes);
+    showBadgeNotification('▶');
+  }
+}
+
+async function handleSkipShortcut() {
+  if (timerState.state === 'running' || timerState.state === 'paused') {
+    await doSkip();
+    showBadgeNotification('⏭');
+  }
+}
+
+function showBadgeNotification(emoji) {
+  chrome.action.setBadgeText({ text: emoji });
+  chrome.action.setBadgeBackgroundColor({ color: '#333' });
+  setTimeout(() => {
+    updateBadge();
+  }, 500);
+}
 
 // --- Alarm Handlers ---
 
@@ -331,6 +448,12 @@ async function doStartTimer(phase, minutes) {
   const sessionTotalMs = minutes * 60000;
   const endTime = Date.now() + sessionTotalMs;
 
+  // Create a new grouped session if none exists
+  if (currentSession === null) {
+    const preset = await getActivePreset();
+    createNewSession(preset);
+  }
+
   timerState.state = 'running';
   timerState.currentPhase = phase;
   timerState.endTime = endTime;
@@ -405,8 +528,8 @@ async function doSkip() {
   const preset = await getActivePreset();
   const plannedMs = getMinutesForPhase(timerState.currentPhase, preset) * 60000;
 
-  // Record the skipped session
-  await recordSession(timerState.currentPhase, plannedMs, elapsedMs, 'skipped');
+  // Record the skipped phase
+  addPhaseToCurrentSession(timerState.currentPhase, plannedMs, elapsedMs, 'skipped', timerState.sessionStartedAt || Date.now());
 
   // If skipping work, it counts
   if (timerState.currentPhase === 'work') {
@@ -441,12 +564,15 @@ async function doSkip() {
 async function doEndActivity() {
   const elapsedMs = calculateElapsedMs();
 
-  // Only record if we were in a running/paused work session
+  // Record the in-progress phase if running/paused
   if (timerState.state === 'running' || timerState.state === 'paused') {
     const preset = await getActivePreset();
     const plannedMs = getMinutesForPhase(timerState.currentPhase, preset) * 60000;
-    await recordSession(timerState.currentPhase, plannedMs, elapsedMs, 'ended');
+    addPhaseToCurrentSession(timerState.currentPhase, plannedMs, elapsedMs, 'ended', timerState.sessionStartedAt || Date.now());
   }
+
+  // Close the grouped session
+  await closeCurrentSession('ended');
 
   timerState.state = 'idle';
   timerState.endTime = null;
@@ -474,18 +600,21 @@ async function handleTimerComplete() {
 
   const preset = await getActivePreset();
   const plannedMs = getMinutesForPhase(timerState.currentPhase, preset) * 60000;
-  const actualMs = timerState.sessionStartedAt
+  let actualMs = timerState.sessionStartedAt
     ? (Date.now() - timerState.sessionStartedAt) - (timerState.totalPausedMs || 0)
     : plannedMs;
+  actualMs = Math.min(actualMs, plannedMs); // Cap for SW wake latency
 
-  // Record completed session
-  await recordSession(timerState.currentPhase, plannedMs, actualMs, 'completed');
+  // Record completed phase
+  addPhaseToCurrentSession(timerState.currentPhase, plannedMs, actualMs, 'completed', timerState.sessionStartedAt || Date.now());
 
   // Update cycle
   if (timerState.currentPhase === 'work') {
     timerState.workSessionsCompleted++;
   } else if (timerState.currentPhase === 'longBreak') {
     timerState.workSessionsCompleted = 0;
+    // Long break completion = natural end of a Pomodoro cycle
+    await closeCurrentSession('completed');
   }
 
   const suggestion = computeSuggestion();
@@ -583,27 +712,6 @@ function getActivePresetSync() {
   return DEFAULT_PRESET;
 }
 
-async function recordSession(mode, plannedDurationMs, actualDurationMs, completionType) {
-  try {
-    const record = {
-      id: crypto.randomUUID(),
-      mode,
-      plannedDurationMs,
-      actualDurationMs: Math.max(0, actualDurationMs),
-      completionType,
-      completedAt: Date.now(),
-    };
-    const { sessionHistory } = await chrome.storage.local.get('sessionHistory');
-    const history = sessionHistory || [];
-    history.push(record);
-    if (history.length > MAX_HISTORY) {
-      history.splice(0, history.length - MAX_HISTORY);
-    }
-    await chrome.storage.local.set({ sessionHistory: history });
-  } catch (err) {
-    console.error('[Pomodoro] Failed to record session:', err);
-  }
-}
 
 function getCompletionMessage() {
   switch (timerState.currentPhase) {
