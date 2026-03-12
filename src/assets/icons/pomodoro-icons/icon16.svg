@@ -1,0 +1,12 @@
+<svg width="16" height="16" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gem-body-16" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff6b6b"/>
+      <stop offset="100%" stop-color="#c0392b"/>
+    </linearGradient>
+  </defs>
+  <!-- Main gem body - slightly larger for 16px clarity -->
+  <polygon points="64,4 108,38 108,90 64,124 20,90 20,38" fill="url(#gem-body-16)"/>
+  <!-- Simple top facet -->
+  <polygon points="64,4 108,38 64,52 20,38" fill="#feca57" opacity="0.55"/>
+</svg>

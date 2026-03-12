@@ -1,0 +1,24 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gem-body" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff6b6b"/>
+      <stop offset="50%" stop-color="#ee5a24"/>
+      <stop offset="100%" stop-color="#b71540"/>
+    </linearGradient>
+    <linearGradient id="gem-top" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ff9f43"/>
+      <stop offset="100%" stop-color="#feca57"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-10%" width="140%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#ff6b6b" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <!-- Main gem body -->
+  <polygon points="64,10 102,40 102,88 64,118 26,88 26,40" fill="url(#gem-body)" filter="url(#shadow)"/>
+  <!-- Top facet highlight -->
+  <polygon points="64,10 102,40 64,52 26,40" fill="url(#gem-top)" opacity="0.7"/>
+  <!-- Left face subtle highlight -->
+  <polygon points="26,40 64,52 64,88 26,88" fill="#fff" opacity="0.08"/>
+  <!-- Top edge highlight streak -->
+  <line x1="34" y1="36" x2="54" y2="22" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+</svg>

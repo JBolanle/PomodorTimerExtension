@@ -1,0 +1,19 @@
+<svg width="48" height="48" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gem-body-48" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff6b6b"/>
+      <stop offset="50%" stop-color="#ee5a24"/>
+      <stop offset="100%" stop-color="#b71540"/>
+    </linearGradient>
+    <linearGradient id="gem-top-48" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ff9f43"/>
+      <stop offset="100%" stop-color="#feca57"/>
+    </linearGradient>
+  </defs>
+  <!-- Main gem body -->
+  <polygon points="64,8 104,40 104,88 64,120 24,88 24,40" fill="url(#gem-body-48)"/>
+  <!-- Top facet highlight -->
+  <polygon points="64,8 104,40 64,52 24,40" fill="url(#gem-top-48)" opacity="0.6"/>
+  <!-- Simple highlight -->
+  <line x1="32" y1="36" x2="52" y2="20" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity="0.45"/>
+</svg>

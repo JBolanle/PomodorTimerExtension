@@ -54,8 +54,8 @@ export function useTimerState() {
     };
   }, []);
 
-  const startTimer = useCallback(async (phase: TimerMode, minutes: number) => {
-    await chromeStartTimer(phase, minutes);
+  const startTimer = useCallback(async (phase: TimerMode, minutes: number, focusMode?: boolean) => {
+    await chromeStartTimer(phase, minutes, focusMode);
   }, []);
 
   const pauseTimer = useCallback(async () => {
