@@ -424,6 +424,14 @@ async function initialize() {
   } else if (timerState.state === 'paused') {
     updateBadge();
   }
+
+  // Focus mode recovery
+  if ((timerState.state === 'running' || timerState.state === 'paused') &&
+      timerState.currentPhase === 'work') {
+    enableFocusMode().catch(err => console.error('[Pomodoro] Focus mode recovery failed:', err));
+  } else {
+    disableFocusMode().catch(err => console.error('[Pomodoro] Focus mode cleanup failed:', err));
+  }
 }
 
 initialize().catch((err) => console.error('[Pomodoro] initialize() failed:', err));
@@ -697,6 +705,10 @@ async function doStartTimer(phase, minutes) {
   // Cancel any pending auto-start
   chrome.alarms.clear(AUTO_START_ALARM).catch(() => {});
   startBadgeAlarm();
+  // Enable focus mode for work sessions
+  if (phase === 'work') {
+    enableFocusMode();
+  }
   return { success: true };
 }
 
@@ -739,6 +751,9 @@ async function doResume() {
     return { success: false, error: 'Failed to create alarm' };
   }
   startBadgeAlarm();
+  if (timerState.currentPhase === 'work') {
+    enableFocusMode();
+  }
   return { success: true };
 }
 
@@ -757,6 +772,9 @@ async function doSkip() {
 
   // Compute suggestion and enter transition
   const suggestion = computeSuggestion();
+  if (timerState.currentPhase === 'work') {
+    await disableFocusMode();
+  }
   timerState.state = 'transition';
   timerState.endTime = null;
   timerState.remainingMs = null;
@@ -791,6 +809,7 @@ async function doEndActivity() {
   }
 
   // Close the grouped session
+  await disableFocusMode();
   await closeCurrentSession('ended');
 
   timerState.state = 'idle';
@@ -840,6 +859,9 @@ async function handleTimerComplete() {
 
   const suggestion = computeSuggestion();
 
+  if (timerState.currentPhase === 'work') {
+    await disableFocusMode();
+  }
   timerState.state = 'transition';
   timerState.endTime = null;
   timerState.remainingMs = null;
