@@ -34,7 +34,7 @@ export function ModeToggle({ mode, onChange }: { mode: AppMode; onChange: (mode:
                   : 'border-border hover:border-muted-foreground/40'
               )}
             >
-              <m.icon className="h-6 w-6" />
+              <m.icon className="h-6 w-6" aria-hidden="true" />
               <span className="text-sm font-medium text-foreground">{m.label}</span>
               <span className="text-xs text-muted-foreground">{m.description}</span>
             </button>

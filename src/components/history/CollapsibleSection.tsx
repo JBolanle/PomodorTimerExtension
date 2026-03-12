@@ -19,7 +19,7 @@ export function CollapsibleSection({ title, badge, defaultOpen = true, children 
         className="flex w-full items-center justify-between px-6 py-4 text-left"
       >
         <div className="flex items-center gap-2">
-          {open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+          {open ? <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />}
           <h3 className="text-sm font-semibold text-foreground">{title}</h3>
           {badge && (
             <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">

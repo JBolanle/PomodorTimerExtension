@@ -64,7 +64,7 @@ export function SessionMetaInput({ note, tags, onUpdate }: SessionMetaInputProps
     <div className="w-full space-y-3">
       <div className="space-y-1">
         <label className="text-xs text-muted-foreground flex items-center gap-1">
-          <FileText className="w-3 h-3" />
+          <FileText className="w-3 h-3" aria-hidden="true" />
           What are you working on?
         </label>
         <input
@@ -79,7 +79,7 @@ export function SessionMetaInput({ note, tags, onUpdate }: SessionMetaInputProps
 
       <div className="space-y-1">
         <label className="text-xs text-muted-foreground flex items-center gap-1">
-          <Tag className="w-3 h-3" />
+          <Tag className="w-3 h-3" aria-hidden="true" />
           Tags (optional)
         </label>
         <div className="relative">
@@ -90,8 +90,8 @@ export function SessionMetaInput({ note, tags, onUpdate }: SessionMetaInputProps
                 className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/20 text-primary text-xs rounded-full"
               >
                 {tag}
-                <button onClick={() => handleRemoveTag(tag)} className="hover:text-primary/70">
-                  <X className="w-3 h-3" />
+                <button onClick={() => handleRemoveTag(tag)} aria-label={`Remove tag ${tag}`} className="hover:text-primary/70">
+                  <X className="w-3 h-3" aria-hidden="true" />
                 </button>
               </span>
             ))}

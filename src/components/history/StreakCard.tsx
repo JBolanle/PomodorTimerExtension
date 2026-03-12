@@ -25,7 +25,7 @@ export function StreakCard({ sessions }: StreakCardProps) {
           }`}>
             <Flame className={`w-5 h-5 ${
               currentStreak > 0 ? 'text-orange-500' : 'text-muted-foreground'
-            }`} />
+            }`} aria-hidden="true" />
           </div>
           <div>
             <div className="text-2xl font-bold">
@@ -42,7 +42,7 @@ export function StreakCard({ sessions }: StreakCardProps) {
 
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-full bg-yellow-500/20">
-            <Trophy className="w-5 h-5 text-yellow-500" />
+            <Trophy className="w-5 h-5 text-yellow-500" aria-hidden="true" />
           </div>
           <div className="text-right">
             <div className="text-2xl font-bold">

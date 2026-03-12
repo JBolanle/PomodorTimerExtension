@@ -44,7 +44,7 @@ export function DateFilter({ value, onChange }: DateFilterProps) {
   return (
     <div className="flex items-center gap-3">
       <Select value={value} onValueChange={handleChange}>
-        <SelectTrigger className="w-[160px]">
+        <SelectTrigger className="w-[160px]" aria-label="Filter by date range">
           <SelectValue>{FILTER_LABELS[value]}</SelectValue>
         </SelectTrigger>
         <SelectContent>
