@@ -494,8 +494,38 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     handleAutoStart();
   } else if (alarm.name === BADGE_ALARM) {
     updateBadge();
+  } else if (alarm.name.startsWith('focus-reblock-')) {
+    handleFocusReblock(alarm.name.replace('focus-reblock-', ''));
   }
 });
+
+async function handleFocusReblock(domain) {
+  if ((timerState.state === 'running' || timerState.state === 'paused') &&
+      timerState.currentPhase === 'work') {
+    const { focusModeSettings } = await chrome.storage.local.get('focusModeSettings');
+    const settings = focusModeSettings || DEFAULT_FOCUS_MODE_SETTINGS;
+
+    if (isDomainBlocked(domain, settings)) {
+      const ruleId = temporaryAllows.get(domain)?.ruleId || (FOCUS_RULE_ID_BASE + 9999);
+      await chrome.declarativeNetRequest.updateDynamicRules({
+        addRules: [{
+          id: ruleId,
+          priority: 1,
+          action: {
+            type: 'redirect',
+            redirect: { extensionPath: '/blocked/blocked.html' },
+          },
+          condition: {
+            urlFilter: `||${domain}`,
+            resourceTypes: ['main_frame'],
+          },
+        }],
+      });
+      focusRuleMap.set(domain, ruleId);
+    }
+  }
+  temporaryAllows.delete(domain);
+}
 
 // --- Message Handler ---
 
@@ -593,6 +623,41 @@ const messageHandlers = {
   getTagHistory: async () => {
     const { tagHistory } = await chrome.storage.local.get('tagHistory');
     return tagHistory || [];
+  },
+
+  getFocusModeSettings: async () => {
+    const { focusModeSettings } = await chrome.storage.local.get('focusModeSettings');
+    return focusModeSettings || DEFAULT_FOCUS_MODE_SETTINGS;
+  },
+
+  updateFocusModeSettings: async (msg) => {
+    const { focusModeSettings: current } = await chrome.storage.local.get('focusModeSettings');
+    const updated = { ...(current || DEFAULT_FOCUS_MODE_SETTINGS), ...msg.settings };
+    await chrome.storage.local.set({ focusModeSettings: updated });
+
+    if ((timerState.state === 'running' || timerState.state === 'paused') &&
+        timerState.currentPhase === 'work') {
+      await enableFocusMode();
+    }
+    return { success: true };
+  },
+
+  allowOnce: async (msg) => {
+    return await focusAllowOnce(msg.domain, msg.minutes);
+  },
+
+  getFocusModeStatus: async () => {
+    try {
+      const rules = await chrome.declarativeNetRequest.getDynamicRules();
+      const focusRules = rules.filter(r => r.id >= FOCUS_RULE_ID_BASE && r.id < FOCUS_RULE_ID_BASE + 10000);
+      return {
+        active: focusRules.length > 0,
+        blockedCount: focusRules.length,
+        temporaryAllows: Array.from(temporaryAllows.keys()),
+      };
+    } catch {
+      return { active: false, blockedCount: 0, temporaryAllows: [] };
+    }
   },
 };
 
