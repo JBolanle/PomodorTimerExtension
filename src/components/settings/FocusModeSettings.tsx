@@ -89,7 +89,7 @@ export function FocusModeSettings() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-2">
-        <Shield className="h-4 w-4 text-foreground" />
+        <Shield className="h-4 w-4 text-foreground" aria-hidden="true" />
         <h3 className="text-sm font-medium text-foreground">Focus Mode</h3>
         {isActive && (
           <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
@@ -148,8 +148,9 @@ export function FocusModeSettings() {
                       size="sm"
                       className="h-6 w-6 p-0"
                       onClick={() => handleRemoveDomain(domain)}
+                      aria-label={`Remove ${domain}`}
                     >
-                      <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Trash2 className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                     </Button>
                   </div>
                 ))}
@@ -167,14 +168,16 @@ export function FocusModeSettings() {
                   if (e.key === 'Enter') handleAddDomain();
                 }}
                 placeholder="e.g. example.com"
+                aria-label="Custom domain to block"
+                aria-describedby={inputError ? 'custom-domain-error' : undefined}
                 className="flex-1 px-3 py-1.5 text-sm border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
-              <Button variant="outline" size="sm" onClick={handleAddDomain}>
-                <Plus className="h-3.5 w-3.5" />
+              <Button variant="outline" size="sm" onClick={handleAddDomain} aria-label="Add custom domain">
+                <Plus className="h-3.5 w-3.5" aria-hidden="true" />
               </Button>
             </div>
             {inputError && (
-              <p className="text-xs text-destructive">{inputError}</p>
+              <p id="custom-domain-error" className="text-xs text-destructive" aria-live="polite">{inputError}</p>
             )}
           </div>
 
@@ -187,6 +190,7 @@ export function FocusModeSettings() {
             <select
               value={focusSettings.allowOnceMinutes}
               onChange={(e) => handleAllowOnceChange(Number(e.target.value))}
+              aria-label="Allow once duration"
               className="text-sm border rounded-md px-2 py-1 bg-background text-foreground"
             >
               <option value={1}>1 min</option>
