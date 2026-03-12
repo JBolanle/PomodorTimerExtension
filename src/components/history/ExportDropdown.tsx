@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { exportToJSON, exportToCSV } from '@/lib/export';
-import type { SessionRecord, Preset } from '@/types';
+import type { Session, Preset } from '@/types';
 
 interface ExportDropdownProps {
-  sessions: SessionRecord[];
+  sessions: Session[];
   presets: Preset[];
   disabled?: boolean;
 }

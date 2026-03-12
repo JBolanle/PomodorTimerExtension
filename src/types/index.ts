@@ -41,13 +41,26 @@ export interface Settings {
   soundVolume: number;
 }
 
-export interface SessionRecord {
+export interface PhaseRecord {
   id: string;
   mode: TimerMode;
   plannedDurationMs: number;
   actualDurationMs: number;
   completionType: CompletionType;
+  startedAt: number;
   completedAt: number;
+}
+
+export interface Session {
+  id: string;
+  startedAt: number;
+  endedAt: number | null;
+  status: 'active' | 'completed' | 'ended';
+  phases: PhaseRecord[];
+  totalFocusMs: number;
+  totalBreakMs: number;
+  presetId: string;
+  presetName: string;
 }
 
 export type DateFilterOption = 'today' | 'week' | 'month' | 'all' | 'custom';

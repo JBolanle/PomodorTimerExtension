@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { SessionRecord } from '@/types';
+import type { Session } from '@/types';
 
 interface TrendComparisonProps {
-  sessions: SessionRecord[];
+  sessions: Session[];
 }
 
 export function TrendComparison({ sessions }: TrendComparisonProps) {
@@ -88,7 +88,7 @@ interface TrendData {
   completionChange: number;
 }
 
-function calculateTrends(sessions: SessionRecord[]): TrendData {
+function calculateTrends(sessions: Session[]): TrendData {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const dayOfWeek = today.getDay();
@@ -102,20 +102,20 @@ function calculateTrends(sessions: SessionRecord[]): TrendData {
   lastWeekEnd.setTime(lastWeekEnd.getTime() - 1);
 
   const thisWeekSessions = sessions.filter(s => {
-    const date = new Date(s.completedAt);
+    const date = new Date(s.startedAt);
     return date >= thisWeekStart && date <= now;
   });
 
   const lastWeekSessions = sessions.filter(s => {
-    const date = new Date(s.completedAt);
+    const date = new Date(s.startedAt);
     return date >= lastWeekStart && date <= lastWeekEnd;
   });
 
-  const thisWeekMinutes = sumMinutes(thisWeekSessions);
-  const lastWeekMinutes = sumMinutes(lastWeekSessions);
+  const thisWeekMinutes = sumFocusMinutes(thisWeekSessions);
+  const lastWeekMinutes = sumFocusMinutes(lastWeekSessions);
 
-  const thisWeekCompleted = thisWeekSessions.filter(s => s.completionType === 'completed').length;
-  const lastWeekCompleted = lastWeekSessions.filter(s => s.completionType === 'completed').length;
+  const thisWeekCompleted = thisWeekSessions.filter(s => s.status === 'completed').length;
+  const lastWeekCompleted = lastWeekSessions.filter(s => s.status === 'completed').length;
 
   const thisWeekCompletionRate = thisWeekSessions.length > 0
     ? Math.round((thisWeekCompleted / thisWeekSessions.length) * 100)
@@ -137,9 +137,9 @@ function calculateTrends(sessions: SessionRecord[]): TrendData {
   };
 }
 
-function sumMinutes(sessions: SessionRecord[]): number {
+function sumFocusMinutes(sessions: Session[]): number {
   return Math.round(
-    sessions.reduce((sum, s) => sum + s.actualDurationMs, 0) / 60000
+    sessions.reduce((sum, s) => sum + s.totalFocusMs, 0) / 60000
   );
 }
 

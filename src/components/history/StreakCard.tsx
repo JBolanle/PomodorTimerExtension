@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { Flame, Trophy } from 'lucide-react';
-import { SessionRecord } from '@/types';
+import type { Session } from '@/types';
 
 interface StreakCardProps {
-  sessions: SessionRecord[];
+  sessions: Session[];
 }
 
 export function StreakCard({ sessions }: StreakCardProps) {
@@ -76,30 +76,30 @@ interface StreakResult {
   isActiveToday: boolean;
 }
 
-function calculateStreaks(sessions: SessionRecord[]): StreakResult {
+function calculateStreaks(sessions: Session[]): StreakResult {
   if (sessions.length === 0) {
     return { currentStreak: 0, bestStreak: 0, isActiveToday: false };
   }
 
-  const daysWithSessions = getUniqueDays(sessions);
+  const daysWithActivity = getUniqueDays(sessions);
 
-  if (daysWithSessions.length === 0) {
+  if (daysWithActivity.length === 0) {
     return { currentStreak: 0, bestStreak: 0, isActiveToday: false };
   }
 
   const today = getDateKey(new Date());
   const yesterday = getDateKey(new Date(Date.now() - 86400000));
 
-  const mostRecentDay = daysWithSessions[0];
+  const mostRecentDay = daysWithActivity[0];
   const isActiveToday = mostRecentDay === today;
   const streakActive = mostRecentDay === today || mostRecentDay === yesterday;
 
   let currentStreak = 0;
   if (streakActive) {
     currentStreak = 1;
-    for (let i = 1; i < daysWithSessions.length; i++) {
-      const prevDay = daysWithSessions[i - 1];
-      const currDay = daysWithSessions[i];
+    for (let i = 1; i < daysWithActivity.length; i++) {
+      const prevDay = daysWithActivity[i - 1];
+      const currDay = daysWithActivity[i];
 
       if (isConsecutive(currDay, prevDay)) {
         currentStreak++;
@@ -112,9 +112,9 @@ function calculateStreaks(sessions: SessionRecord[]): StreakResult {
   let bestStreak = 0;
   let tempStreak = 1;
 
-  for (let i = 1; i < daysWithSessions.length; i++) {
-    const prevDay = daysWithSessions[i - 1];
-    const currDay = daysWithSessions[i];
+  for (let i = 1; i < daysWithActivity.length; i++) {
+    const prevDay = daysWithActivity[i - 1];
+    const currDay = daysWithActivity[i];
 
     if (isConsecutive(currDay, prevDay)) {
       tempStreak++;
@@ -128,11 +128,11 @@ function calculateStreaks(sessions: SessionRecord[]): StreakResult {
   return { currentStreak, bestStreak, isActiveToday };
 }
 
-function getUniqueDays(sessions: SessionRecord[]): string[] {
+function getUniqueDays(sessions: Session[]): string[] {
   const days = new Set<string>();
   for (const session of sessions) {
-    if (session.completionType === 'completed') {
-      days.add(getDateKey(new Date(session.completedAt)));
+    if (session.totalFocusMs > 0) {
+      days.add(getDateKey(new Date(session.startedAt)));
     }
   }
   return Array.from(days).sort().reverse();
