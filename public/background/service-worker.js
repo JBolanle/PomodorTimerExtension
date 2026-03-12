@@ -15,6 +15,25 @@ const DEFAULT_PRESET = {
   sessionsBeforeLongBreak: 4,
 };
 
+// --- Focus Mode ---
+const FOCUS_RULE_ID_BASE = 10000;
+const FOCUS_BLOCKLISTS = {
+  social: ['facebook.com', 'twitter.com', 'x.com', 'instagram.com', 'tiktok.com', 'snapchat.com', 'linkedin.com', 'reddit.com', 'threads.net', 'mastodon.social', 'bsky.app'],
+  video: ['youtube.com', 'netflix.com', 'twitch.tv', 'hulu.com', 'disneyplus.com', 'primevideo.com', 'max.com'],
+  news: ['news.ycombinator.com', 'cnn.com', 'bbc.com', 'nytimes.com', 'theguardian.com'],
+  shopping: ['amazon.com', 'ebay.com', 'etsy.com', 'aliexpress.com'],
+  gaming: ['store.steampowered.com', 'steamcommunity.com', 'discord.com', 'epicgames.com', 'itch.io'],
+};
+const DEFAULT_FOCUS_MODE_SETTINGS = {
+  enabled: true,
+  categories: { social: true, video: true, news: false, shopping: false, gaming: false },
+  customDomains: [],
+  allowOnceMinutes: 5,
+};
+
+let focusRuleMap = new Map(); // domain -> ruleId
+let temporaryAllows = new Map(); // domain -> { ruleId, expiresAt }
+
 // Cached badge setting (avoids reading storage on every 30s update)
 let showBadge = true;
 
@@ -247,6 +266,116 @@ async function loadState() {
   if (data.currentSession) {
     currentSession = data.currentSession;
   }
+}
+
+// --- Focus Mode Controller ---
+
+function generateBlockedDomains(settings) {
+  const domains = [];
+  for (const [categoryId, categoryDomains] of Object.entries(FOCUS_BLOCKLISTS)) {
+    if (settings.categories[categoryId]) {
+      domains.push(...categoryDomains);
+    }
+  }
+  domains.push(...(settings.customDomains || []));
+  return [...new Set(domains)];
+}
+
+async function enableFocusMode() {
+  try {
+    const { focusModeSettings } = await chrome.storage.local.get('focusModeSettings');
+    const settings = focusModeSettings || DEFAULT_FOCUS_MODE_SETTINGS;
+
+    if (!settings.enabled) return;
+
+    const domains = generateBlockedDomains(settings);
+    if (domains.length === 0) return;
+
+    const rules = [];
+    focusRuleMap.clear();
+    domains.forEach((domain, i) => {
+      const ruleId = FOCUS_RULE_ID_BASE + 1 + i;
+      focusRuleMap.set(domain, ruleId);
+      rules.push({
+        id: ruleId,
+        priority: 1,
+        action: {
+          type: 'redirect',
+          redirect: { extensionPath: '/blocked/blocked.html' },
+        },
+        condition: {
+          urlFilter: `||${domain}`,
+          resourceTypes: ['main_frame'],
+        },
+      });
+    });
+
+    const existing = await chrome.declarativeNetRequest.getDynamicRules();
+    const focusRuleIds = existing
+      .filter(r => r.id >= FOCUS_RULE_ID_BASE && r.id < FOCUS_RULE_ID_BASE + 10000)
+      .map(r => r.id);
+
+    await chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: focusRuleIds,
+      addRules: rules,
+    });
+  } catch (err) {
+    console.error('[Pomodoro] Failed to enable focus mode:', err);
+  }
+}
+
+async function disableFocusMode() {
+  try {
+    const existing = await chrome.declarativeNetRequest.getDynamicRules();
+    const focusRuleIds = existing
+      .filter(r => r.id >= FOCUS_RULE_ID_BASE && r.id < FOCUS_RULE_ID_BASE + 10000)
+      .map(r => r.id);
+
+    if (focusRuleIds.length > 0) {
+      await chrome.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: focusRuleIds,
+        addRules: [],
+      });
+    }
+
+    const alarms = await chrome.alarms.getAll();
+    for (const alarm of alarms) {
+      if (alarm.name.startsWith('focus-reblock-')) {
+        await chrome.alarms.clear(alarm.name);
+      }
+    }
+
+    focusRuleMap.clear();
+    temporaryAllows.clear();
+  } catch (err) {
+    console.error('[Pomodoro] Failed to disable focus mode:', err);
+  }
+}
+
+async function focusAllowOnce(domain, minutes = 5) {
+  try {
+    const ruleId = focusRuleMap.get(domain);
+    if (ruleId) {
+      await chrome.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: [ruleId],
+      });
+    }
+
+    temporaryAllows.set(domain, { ruleId, expiresAt: Date.now() + minutes * 60000 });
+    chrome.alarms.create(`focus-reblock-${domain}`, { delayInMinutes: minutes });
+    return { success: true };
+  } catch (err) {
+    console.error('[Pomodoro] Failed to allow domain:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+function isDomainBlocked(domain, settings) {
+  if ((settings.customDomains || []).includes(domain)) return true;
+  for (const [categoryId, domains] of Object.entries(FOCUS_BLOCKLISTS)) {
+    if (settings.categories[categoryId] && domains.includes(domain)) return true;
+  }
+  return false;
 }
 
 // --- Initialization & Recovery ---
