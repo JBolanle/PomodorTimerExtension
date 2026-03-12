@@ -13,7 +13,7 @@ export function ThemePicker() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className="grid grid-cols-3 gap-3" role="radiogroup" aria-label="Select theme">
       {THEMES.map((t) => {
         const meta = THEME_META[t];
         const isActive = theme === t;
@@ -22,6 +22,8 @@ export function ThemePicker() {
           <button
             key={t}
             onClick={() => setTheme(t)}
+            role="radio"
+            aria-checked={isActive}
             className={cn(
               'flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors cursor-pointer',
               isActive
@@ -29,7 +31,7 @@ export function ThemePicker() {
                 : 'border-border hover:border-muted-foreground/40'
             )}
           >
-            <div className={cn('h-8 w-8 rounded-full', THEME_SWATCHES[t])} />
+            <div className={cn('h-8 w-8 rounded-full', THEME_SWATCHES[t])} aria-hidden="true" />
             <span className="text-sm font-medium text-foreground">{meta.label}</span>
             <span className="text-xs text-muted-foreground">{meta.description}</span>
           </button>
