@@ -13,10 +13,12 @@ import { ClearHistoryModal } from '@/components/history/ClearHistoryModal';
 import { useHistory } from '@/hooks/useHistory';
 import { usePresets } from '@/hooks/usePresets';
 import { Button } from '@/components/ui/button';
+import { useAnnounce } from '@/components/Announcer';
 
 export function HistoryPage() {
   const { sessions, filteredSessions, clearHistory, filter, setFilter } = useHistory();
   const { presets } = usePresets();
+  const announce = useAnnounce();
   const [showClearModal, setShowClearModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -32,7 +34,7 @@ export function HistoryPage() {
         <PageHeader title="History & Stats" description="View your completed sessions and productivity stats." />
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setShowImportModal(true)}>
-            <Upload className="mr-1 h-4 w-4" />
+            <Upload className="mr-1 h-4 w-4" aria-hidden="true" />
             Import
           </Button>
           <ExportDropdown sessions={sessions} presets={presets} disabled={sessions.length === 0} />
@@ -57,7 +59,7 @@ export function HistoryPage() {
             disabled={sessions.length === 0}
             onClick={() => setShowClearModal(true)}
           >
-            <Trash2 className="mr-1 h-4 w-4" />
+            <Trash2 className="mr-1 h-4 w-4" aria-hidden="true" />
             Clear
           </Button>
         </div>
@@ -68,7 +70,7 @@ export function HistoryPage() {
       {showClearModal && (
         <ClearHistoryModal
           sessionCount={sessions.length}
-          onConfirm={() => { clearHistory(); setShowClearModal(false); }}
+          onConfirm={() => { clearHistory(); setShowClearModal(false); announce('History cleared'); }}
           onCancel={() => setShowClearModal(false)}
         />
       )}
