@@ -27,14 +27,25 @@ export function ExportDropdown({ sessions, presets, disabled }: ExportDropdownPr
 
   return (
     <div className="relative" ref={ref}>
-      <Button variant="outline" size="sm" disabled={disabled} onClick={() => setOpen(!open)}>
-        <Download className="mr-1 h-4 w-4" />
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={disabled}
+        onClick={() => setOpen(!open)}
+        aria-haspopup="true"
+        aria-expanded={open}
+      >
+        <Download className="mr-1 h-4 w-4" aria-hidden="true" />
         Export
       </Button>
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-border bg-popover p-1 shadow-md">
+        <div
+          className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-border bg-popover p-1 shadow-md"
+          role="menu"
+        >
           <button
             type="button"
+            role="menuitem"
             className="flex w-full items-center rounded px-3 py-2 text-sm text-foreground hover:bg-accent"
             onClick={() => { exportToJSON(sessions, presets); setOpen(false); }}
           >
@@ -42,6 +53,7 @@ export function ExportDropdown({ sessions, presets, disabled }: ExportDropdownPr
           </button>
           <button
             type="button"
+            role="menuitem"
             className="flex w-full items-center rounded px-3 py-2 text-sm text-foreground hover:bg-accent"
             onClick={() => { exportToCSV(sessions); setOpen(false); }}
           >
