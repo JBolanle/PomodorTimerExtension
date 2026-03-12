@@ -15,6 +15,25 @@ const DEFAULT_PRESET = {
   sessionsBeforeLongBreak: 4,
 };
 
+// --- Focus Mode ---
+const FOCUS_RULE_ID_BASE = 10000;
+const FOCUS_BLOCKLISTS = {
+  social: ['facebook.com', 'twitter.com', 'x.com', 'instagram.com', 'tiktok.com', 'snapchat.com', 'linkedin.com', 'reddit.com', 'threads.net', 'mastodon.social', 'bsky.app'],
+  video: ['youtube.com', 'netflix.com', 'twitch.tv', 'hulu.com', 'disneyplus.com', 'primevideo.com', 'max.com'],
+  news: ['news.ycombinator.com', 'cnn.com', 'bbc.com', 'nytimes.com', 'theguardian.com'],
+  shopping: ['amazon.com', 'ebay.com', 'etsy.com', 'aliexpress.com'],
+  gaming: ['store.steampowered.com', 'steamcommunity.com', 'discord.com', 'epicgames.com', 'itch.io'],
+};
+const DEFAULT_FOCUS_MODE_SETTINGS = {
+  enabled: true,
+  categories: { social: true, video: true, news: false, shopping: false, gaming: false },
+  customDomains: [],
+  allowOnceMinutes: 5,
+};
+
+let focusRuleMap = new Map(); // domain -> ruleId
+let temporaryAllows = new Map(); // domain -> { ruleId, expiresAt }
+
 // Cached badge setting (avoids reading storage on every 30s update)
 let showBadge = true;
 
@@ -249,6 +268,116 @@ async function loadState() {
   }
 }
 
+// --- Focus Mode Controller ---
+
+function generateBlockedDomains(settings) {
+  const domains = [];
+  for (const [categoryId, categoryDomains] of Object.entries(FOCUS_BLOCKLISTS)) {
+    if (settings.categories[categoryId]) {
+      domains.push(...categoryDomains);
+    }
+  }
+  domains.push(...(settings.customDomains || []));
+  return [...new Set(domains)];
+}
+
+async function enableFocusMode() {
+  try {
+    const { focusModeSettings } = await chrome.storage.local.get('focusModeSettings');
+    const settings = focusModeSettings || DEFAULT_FOCUS_MODE_SETTINGS;
+
+    if (!settings.enabled) return;
+
+    const domains = generateBlockedDomains(settings);
+    if (domains.length === 0) return;
+
+    const rules = [];
+    focusRuleMap.clear();
+    domains.forEach((domain, i) => {
+      const ruleId = FOCUS_RULE_ID_BASE + 1 + i;
+      focusRuleMap.set(domain, ruleId);
+      rules.push({
+        id: ruleId,
+        priority: 1,
+        action: {
+          type: 'redirect',
+          redirect: { extensionPath: '/blocked/blocked.html' },
+        },
+        condition: {
+          urlFilter: `||${domain}`,
+          resourceTypes: ['main_frame'],
+        },
+      });
+    });
+
+    const existing = await chrome.declarativeNetRequest.getDynamicRules();
+    const focusRuleIds = existing
+      .filter(r => r.id >= FOCUS_RULE_ID_BASE && r.id < FOCUS_RULE_ID_BASE + 10000)
+      .map(r => r.id);
+
+    await chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: focusRuleIds,
+      addRules: rules,
+    });
+  } catch (err) {
+    console.error('[Pomodoro] Failed to enable focus mode:', err);
+  }
+}
+
+async function disableFocusMode() {
+  try {
+    const existing = await chrome.declarativeNetRequest.getDynamicRules();
+    const focusRuleIds = existing
+      .filter(r => r.id >= FOCUS_RULE_ID_BASE && r.id < FOCUS_RULE_ID_BASE + 10000)
+      .map(r => r.id);
+
+    if (focusRuleIds.length > 0) {
+      await chrome.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: focusRuleIds,
+        addRules: [],
+      });
+    }
+
+    const alarms = await chrome.alarms.getAll();
+    for (const alarm of alarms) {
+      if (alarm.name.startsWith('focus-reblock-')) {
+        await chrome.alarms.clear(alarm.name);
+      }
+    }
+
+    focusRuleMap.clear();
+    temporaryAllows.clear();
+  } catch (err) {
+    console.error('[Pomodoro] Failed to disable focus mode:', err);
+  }
+}
+
+async function focusAllowOnce(domain, minutes = 5) {
+  try {
+    const ruleId = focusRuleMap.get(domain);
+    if (ruleId) {
+      await chrome.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: [ruleId],
+      });
+    }
+
+    temporaryAllows.set(domain, { ruleId, expiresAt: Date.now() + minutes * 60000 });
+    chrome.alarms.create(`focus-reblock-${domain}`, { delayInMinutes: minutes });
+    return { success: true };
+  } catch (err) {
+    console.error('[Pomodoro] Failed to allow domain:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+function isDomainBlocked(domain, settings) {
+  if ((settings.customDomains || []).includes(domain)) return true;
+  for (const [categoryId, domains] of Object.entries(FOCUS_BLOCKLISTS)) {
+    if (settings.categories[categoryId] && domains.includes(domain)) return true;
+  }
+  return false;
+}
+
 // --- Initialization & Recovery ---
 
 async function initialize() {
@@ -294,6 +423,14 @@ async function initialize() {
     startBadgeAlarm();
   } else if (timerState.state === 'paused') {
     updateBadge();
+  }
+
+  // Focus mode recovery
+  if ((timerState.state === 'running' || timerState.state === 'paused') &&
+      timerState.currentPhase === 'work') {
+    enableFocusMode().catch(err => console.error('[Pomodoro] Focus mode recovery failed:', err));
+  } else {
+    disableFocusMode().catch(err => console.error('[Pomodoro] Focus mode cleanup failed:', err));
   }
 }
 
@@ -365,8 +502,38 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     handleAutoStart();
   } else if (alarm.name === BADGE_ALARM) {
     updateBadge();
+  } else if (alarm.name.startsWith('focus-reblock-')) {
+    handleFocusReblock(alarm.name.replace('focus-reblock-', ''));
   }
 });
+
+async function handleFocusReblock(domain) {
+  if ((timerState.state === 'running' || timerState.state === 'paused') &&
+      timerState.currentPhase === 'work') {
+    const { focusModeSettings } = await chrome.storage.local.get('focusModeSettings');
+    const settings = focusModeSettings || DEFAULT_FOCUS_MODE_SETTINGS;
+
+    if (isDomainBlocked(domain, settings)) {
+      const ruleId = temporaryAllows.get(domain)?.ruleId || (FOCUS_RULE_ID_BASE + 9999);
+      await chrome.declarativeNetRequest.updateDynamicRules({
+        addRules: [{
+          id: ruleId,
+          priority: 1,
+          action: {
+            type: 'redirect',
+            redirect: { extensionPath: '/blocked/blocked.html' },
+          },
+          condition: {
+            urlFilter: `||${domain}`,
+            resourceTypes: ['main_frame'],
+          },
+        }],
+      });
+      focusRuleMap.set(domain, ruleId);
+    }
+  }
+  temporaryAllows.delete(domain);
+}
 
 // --- Message Handler ---
 
@@ -465,6 +632,41 @@ const messageHandlers = {
     const { tagHistory } = await chrome.storage.local.get('tagHistory');
     return tagHistory || [];
   },
+
+  getFocusModeSettings: async () => {
+    const { focusModeSettings } = await chrome.storage.local.get('focusModeSettings');
+    return focusModeSettings || DEFAULT_FOCUS_MODE_SETTINGS;
+  },
+
+  updateFocusModeSettings: async (msg) => {
+    const { focusModeSettings: current } = await chrome.storage.local.get('focusModeSettings');
+    const updated = { ...(current || DEFAULT_FOCUS_MODE_SETTINGS), ...msg.settings };
+    await chrome.storage.local.set({ focusModeSettings: updated });
+
+    if ((timerState.state === 'running' || timerState.state === 'paused') &&
+        timerState.currentPhase === 'work') {
+      await enableFocusMode();
+    }
+    return { success: true };
+  },
+
+  allowOnce: async (msg) => {
+    return await focusAllowOnce(msg.domain, msg.minutes);
+  },
+
+  getFocusModeStatus: async () => {
+    try {
+      const rules = await chrome.declarativeNetRequest.getDynamicRules();
+      const focusRules = rules.filter(r => r.id >= FOCUS_RULE_ID_BASE && r.id < FOCUS_RULE_ID_BASE + 10000);
+      return {
+        active: focusRules.length > 0,
+        blockedCount: focusRules.length,
+        temporaryAllows: Array.from(temporaryAllows.keys()),
+      };
+    } catch {
+      return { active: false, blockedCount: 0, temporaryAllows: [] };
+    }
+  },
 };
 
 // --- Timer Operations ---
@@ -503,6 +705,10 @@ async function doStartTimer(phase, minutes) {
   // Cancel any pending auto-start
   chrome.alarms.clear(AUTO_START_ALARM).catch(() => {});
   startBadgeAlarm();
+  // Enable focus mode for work sessions
+  if (phase === 'work') {
+    enableFocusMode();
+  }
   return { success: true };
 }
 
@@ -545,6 +751,9 @@ async function doResume() {
     return { success: false, error: 'Failed to create alarm' };
   }
   startBadgeAlarm();
+  if (timerState.currentPhase === 'work') {
+    enableFocusMode();
+  }
   return { success: true };
 }
 
@@ -563,6 +772,9 @@ async function doSkip() {
 
   // Compute suggestion and enter transition
   const suggestion = computeSuggestion();
+  if (timerState.currentPhase === 'work') {
+    await disableFocusMode();
+  }
   timerState.state = 'transition';
   timerState.endTime = null;
   timerState.remainingMs = null;
@@ -597,6 +809,7 @@ async function doEndActivity() {
   }
 
   // Close the grouped session
+  await disableFocusMode();
   await closeCurrentSession('ended');
 
   timerState.state = 'idle';
@@ -646,6 +859,9 @@ async function handleTimerComplete() {
 
   const suggestion = computeSuggestion();
 
+  if (timerState.currentPhase === 'work') {
+    await disableFocusMode();
+  }
   timerState.state = 'transition';
   timerState.endTime = null;
   timerState.remainingMs = null;
