@@ -177,6 +177,8 @@ export default function App() {
       <SessionDots
         completedSessions={workSessionsCompleted}
         total={activePreset.sessionsBeforeLongBreak}
+        currentPhase={currentPhase}
+        timerState={timerState}
       />
 
       <Separator className="my-1" />
