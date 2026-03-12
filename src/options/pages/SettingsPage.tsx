@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { ThemePicker } from '@/components/settings/ThemePicker';
 import { ModeToggle } from '@/components/settings/ModeToggle';
 import { KeyboardShortcuts } from '@/components/settings/KeyboardShortcuts';
+import { FocusModeSettings } from '@/components/settings/FocusModeSettings';
 import type { Preset } from '@/types';
 
 function PresetEditor({ preset, onSave, onDelete, isDefault, readOnly }: {
@@ -188,6 +189,15 @@ export function SettingsPage() {
               </div>
             </section>
 
+            <Separator />
+          </>
+        )}
+
+        {isAdvanced && (
+          <>
+            <section className="space-y-4">
+              <FocusModeSettings />
+            </section>
             <Separator />
           </>
         )}
