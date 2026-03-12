@@ -1,14 +1,17 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useTimerState } from '@/hooks/useTimerState';
 import { useTheme } from '@/hooks/useTheme';
 import { usePresets } from '@/hooks/usePresets';
 import { useSettings } from '@/hooks/useSettings';
+import { useAppMode } from '@/hooks/useAppMode';
 import { usePopupShortcuts } from '@/hooks/usePopupShortcuts';
 import { TimerDisplay } from '@/components/timer/TimerDisplay';
 import { PresetSelector } from '@/components/timer/PresetSelector';
 import { TimerControls } from '@/components/timer/TimerControls';
 import { SessionDots } from '@/components/timer/SessionDots';
 import { BreakTipDisplay } from '@/components/timer/BreakTip';
+import { StartSessionModal } from '@/components/timer/StartSessionModal';
+import { CurrentSessionMeta } from '@/components/timer/CurrentSessionMeta';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { THEMES, THEME_META } from '@/lib/constants';
@@ -37,13 +40,34 @@ export default function App() {
   const { theme, setTheme } = useTheme();
   const { presets, activePreset, activePresetId, selectPreset } = usePresets();
   const { settings } = useSettings();
+  const { isAdvanced } = useAppMode();
+  const [showStartModal, setShowStartModal] = useState(false);
 
   const showBreakTip = settings.showBreakTips &&
     (currentPhase === 'shortBreak' || currentPhase === 'longBreak') &&
     (timerState === 'running' || timerState === 'paused' || timerState === 'transition');
 
+  const showSessionMeta = isAdvanced &&
+    (timerState === 'running' || timerState === 'paused') &&
+    currentPhase === 'work';
+
   const handleStart = useCallback(() => {
+    if (isAdvanced) {
+      setShowStartModal(true);
+    } else {
+      startTimer('work', activePreset.workMinutes);
+    }
+  }, [isAdvanced, activePreset, startTimer]);
+
+  const handleStartWithMeta = useCallback(async (note: string, tags: string[]) => {
+    await chrome.runtime.sendMessage({ action: 'setSessionMeta', note, tags }).catch(() => {});
     startTimer('work', activePreset.workMinutes);
+    setShowStartModal(false);
+  }, [activePreset, startTimer]);
+
+  const handleStartWithoutMeta = useCallback(() => {
+    startTimer('work', activePreset.workMinutes);
+    setShowStartModal(false);
   }, [activePreset, startTimer]);
 
   const handleStartNext = useCallback(() => {
@@ -53,9 +77,9 @@ export default function App() {
   const handleToggle = useCallback(() => {
     if (timerState === 'running') pauseTimer();
     else if (timerState === 'paused') resumeTimer();
-    else if (timerState === 'idle') startTimer('work', activePreset.workMinutes);
+    else if (timerState === 'idle') handleStart();
     else if (timerState === 'transition') startNext();
-  }, [timerState, pauseTimer, resumeTimer, startTimer, startNext, activePreset]);
+  }, [timerState, pauseTimer, resumeTimer, handleStart, startNext]);
 
   usePopupShortcuts({
     onToggle: handleToggle,
@@ -106,6 +130,8 @@ export default function App() {
         suggestedNext={suggestedNext}
       />
 
+      <CurrentSessionMeta visible={showSessionMeta} />
+
       <BreakTipDisplay visible={showBreakTip} />
 
       <TimerControls
@@ -149,6 +175,16 @@ export default function App() {
           Space: start/pause &middot; S: skip &middot; R: reset &middot; Esc: close
         </span>
       </footer>
+
+      {showStartModal && (
+        <StartSessionModal
+          presetName={activePreset.name}
+          duration={activePreset.workMinutes}
+          onStart={handleStartWithMeta}
+          onSkip={handleStartWithoutMeta}
+          onCancel={() => setShowStartModal(false)}
+        />
+      )}
     </div>
   );
 }

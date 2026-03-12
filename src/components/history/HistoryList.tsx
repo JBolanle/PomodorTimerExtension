@@ -86,6 +86,7 @@ function SessionCard({ session }: { session: Session }) {
 
   const focusMinutes = Math.round(session.totalFocusMs / 60000);
   const statusLabel = session.status === 'completed' ? 'Completed' : session.status === 'ended' ? 'Ended' : 'Active';
+  const hasMeta = session.note || (session.tags && session.tags.length > 0);
 
   return (
     <div className="rounded-lg border border-border bg-card p-4 space-y-3">
@@ -102,6 +103,23 @@ function SessionCard({ session }: { session: Session }) {
           {statusLabel}
         </span>
       </div>
+
+      {hasMeta && (
+        <div className="pt-1 border-t border-border/50 space-y-1">
+          {session.tags && session.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {session.tags.map((tag) => (
+                <span key={tag} className="px-1.5 py-0.5 bg-primary/10 text-primary text-xs rounded">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+          {session.note && (
+            <p className="text-xs text-muted-foreground">{session.note}</p>
+          )}
+        </div>
+      )}
 
       <TimelineBar phases={session.phases} />
 

@@ -53,6 +53,8 @@ export interface PhaseRecord {
   completionType: CompletionType;
   startedAt: number;
   completedAt: number;
+  note?: string;
+  tags?: string[];
 }
 
 export interface Session {
@@ -65,6 +67,8 @@ export interface Session {
   totalBreakMs: number;
   presetId: string;
   presetName: string;
+  note?: string;
+  tags?: string[];
 }
 
 export type DateFilterOption = 'today' | 'week' | 'month' | 'all' | 'custom';

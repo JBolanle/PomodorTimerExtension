@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Trash2, Upload } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { CollapsibleSection } from '@/components/history/CollapsibleSection';
@@ -8,6 +8,7 @@ import { HistoryList } from '@/components/history/HistoryList';
 import { DateFilter } from '@/components/history/DateFilter';
 import { ExportDropdown } from '@/components/history/ExportDropdown';
 import { ImportModal } from '@/components/history/ImportModal';
+import { TagFilter } from '@/components/history/TagFilter';
 import { ClearHistoryModal } from '@/components/history/ClearHistoryModal';
 import { useHistory } from '@/hooks/useHistory';
 import { usePresets } from '@/hooks/usePresets';
@@ -18,6 +19,12 @@ export function HistoryPage() {
   const { presets } = usePresets();
   const [showClearModal, setShowClearModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  const filteredByTags = useMemo(() => {
+    if (selectedTags.length === 0) return filteredSessions;
+    return filteredSessions.filter((s) => s.tags?.some((t) => selectedTags.includes(t)));
+  }, [filteredSessions, selectedTags]);
 
   return (
     <div className="space-y-6">
@@ -54,7 +61,8 @@ export function HistoryPage() {
             Clear
           </Button>
         </div>
-        <HistoryList sessions={filteredSessions} />
+        <TagFilter sessions={sessions} selectedTags={selectedTags} onChange={setSelectedTags} />
+        <HistoryList sessions={filteredByTags} />
       </CollapsibleSection>
 
       {showClearModal && (

@@ -32,6 +32,8 @@ let timerState = {
   autoStartNext: false,
   totalPausedMs: 0,
   pausedAt: null,
+  currentNote: null,
+  currentTags: [],
 };
 
 // --- Session Grouping ---
@@ -49,6 +51,8 @@ function createNewSession(preset) {
     totalBreakMs: 0,
     presetId: preset.id,
     presetName: preset.name,
+    ...(timerState.currentNote ? { note: timerState.currentNote } : {}),
+    ...(timerState.currentTags?.length > 0 ? { tags: timerState.currentTags } : {}),
   };
 }
 
@@ -83,10 +87,15 @@ async function closeCurrentSession(status) {
       sessions.splice(0, sessions.length - MAX_SESSIONS);
     }
     await chrome.storage.local.set({ sessions });
+    if (currentSession.tags?.length > 0) {
+      await addTagsToHistory(currentSession.tags);
+    }
   } catch (err) {
     console.error('[Pomodoro] Failed to save session:', err);
   }
   currentSession = null;
+  timerState.currentNote = null;
+  timerState.currentTags = [];
 }
 
 // --- Badge ---
@@ -143,7 +152,7 @@ const STATE_KEYS = [
   'state', 'endTime', 'remainingMs', 'sessionStartedAt',
   'currentPhase', 'workSessionsCompleted', 'suggestedNext',
   'lastCompletedDurationMs', 'activePresetId', 'autoStartNext',
-  'totalPausedMs', 'pausedAt',
+  'totalPausedMs', 'pausedAt', 'currentNote', 'currentTags',
 ];
 
 async function persistState() {
@@ -440,6 +449,22 @@ const messageHandlers = {
     await persistState();
     return { success: true };
   },
+
+  setSessionMeta: async (msg) => {
+    if (msg.note !== undefined) timerState.currentNote = msg.note;
+    if (msg.tags !== undefined) timerState.currentTags = msg.tags;
+    await persistState();
+    return { success: true };
+  },
+
+  getSessionMeta: async () => {
+    return { note: timerState.currentNote, tags: timerState.currentTags };
+  },
+
+  getTagHistory: async () => {
+    const { tagHistory } = await chrome.storage.local.get('tagHistory');
+    return tagHistory || [];
+  },
 };
 
 // --- Timer Operations ---
@@ -584,6 +609,8 @@ async function doEndActivity() {
   timerState.lastCompletedDurationMs = null;
   timerState.totalPausedMs = 0;
   timerState.pausedAt = null;
+  timerState.currentNote = null;
+  timerState.currentTags = [];
 
   await persistState();
   chrome.alarms.clear(POMODORO_ALARM).catch(() => {});
@@ -712,6 +739,13 @@ function getActivePresetSync() {
   return DEFAULT_PRESET;
 }
 
+async function addTagsToHistory(tags) {
+  if (!tags || tags.length === 0) return;
+  const { tagHistory } = await chrome.storage.local.get('tagHistory');
+  const existing = tagHistory || [];
+  const updated = [...new Set([...tags, ...existing])].slice(0, 50);
+  await chrome.storage.local.set({ tagHistory: updated });
+}
 
 function getCompletionMessage() {
   switch (timerState.currentPhase) {
