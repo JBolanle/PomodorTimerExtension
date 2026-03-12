@@ -1033,17 +1033,20 @@ async function playNotificationSound(phase) {
     const volume = settings?.soundVolume ?? 1.0;
     const soundPath = getSoundForPhase(phase, settings);
 
-    if (!chrome.offscreen) {
-      // Firefox fallback — no offscreen API
+    if (chrome.offscreen) {
+      // Chrome: use Offscreen Document API
+      await ensureOffscreenDocument();
+      await chrome.runtime.sendMessage({
+        action: 'playSound',
+        sound: soundPath,
+        volume,
+      });
       return;
     }
-
-    await ensureOffscreenDocument();
-    await chrome.runtime.sendMessage({
-      action: 'playSound',
-      sound: soundPath,
-      volume,
-    });
+    // Firefox: direct Audio works in background scripts
+    const audio = new Audio(chrome.runtime.getURL(soundPath));
+    audio.volume = volume;
+    await audio.play();
   } catch (err) {
     console.error('[Pomodoro] Sound playback failed:', err);
   }
