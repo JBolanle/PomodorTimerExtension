@@ -43,6 +43,15 @@ export default function App() {
   const { isAdvanced } = useAppMode();
   const [showStartModal, setShowStartModal] = useState(false);
   const [focusModeActive, setFocusModeActive] = useState(false);
+  const [focusModeEnabled, setFocusModeEnabled] = useState(true);
+
+  useEffect(() => {
+    if (isAdvanced) {
+      chrome.runtime.sendMessage({ action: 'getFocusModeSettings' })
+        .then(res => setFocusModeEnabled(res?.settings?.enabled ?? true))
+        .catch(() => {});
+    }
+  }, [isAdvanced]);
 
   useEffect(() => {
     if ((timerState === 'running' || timerState === 'paused') && currentPhase === 'work') {
@@ -66,20 +75,20 @@ export default function App() {
     if (isAdvanced) {
       setShowStartModal(true);
     } else {
-      startTimer('work', activePreset.workMinutes);
+      startTimer('work', activePreset.workMinutes, false);
     }
   }, [isAdvanced, activePreset, startTimer]);
 
   const handleStartWithMeta = useCallback(async (note: string, tags: string[]) => {
     await chrome.runtime.sendMessage({ action: 'setSessionMeta', note, tags }).catch(() => {});
-    startTimer('work', activePreset.workMinutes);
+    startTimer('work', activePreset.workMinutes, focusModeEnabled);
     setShowStartModal(false);
-  }, [activePreset, startTimer]);
+  }, [activePreset, startTimer, focusModeEnabled]);
 
   const handleStartWithoutMeta = useCallback(() => {
-    startTimer('work', activePreset.workMinutes);
+    startTimer('work', activePreset.workMinutes, focusModeEnabled);
     setShowStartModal(false);
-  }, [activePreset, startTimer]);
+  }, [activePreset, startTimer, focusModeEnabled]);
 
   const handleStartNext = useCallback(() => {
     startNext();
@@ -200,6 +209,8 @@ export default function App() {
         <StartSessionModal
           presetName={activePreset.name}
           duration={activePreset.workMinutes}
+          focusModeEnabled={focusModeEnabled}
+          onFocusModeChange={setFocusModeEnabled}
           onStart={handleStartWithMeta}
           onSkip={handleStartWithoutMeta}
           onCancel={() => setShowStartModal(false)}

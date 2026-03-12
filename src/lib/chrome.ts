@@ -4,8 +4,8 @@ export function getTimerState(): Promise<TimerState> {
   return chrome.runtime.sendMessage({ action: 'getState' });
 }
 
-export function startTimer(phase: TimerMode, minutes: number): Promise<{ success: boolean }> {
-  return chrome.runtime.sendMessage({ action: 'startTimer', phase, minutes });
+export function startTimer(phase: TimerMode, minutes: number, focusMode?: boolean): Promise<{ success: boolean }> {
+  return chrome.runtime.sendMessage({ action: 'startTimer', phase, minutes, focusMode });
 }
 
 export function pauseTimer(): Promise<{ success: boolean }> {

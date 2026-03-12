@@ -1,17 +1,20 @@
 import { useState } from 'react';
-import { Play, X } from 'lucide-react';
+import { Play, Shield, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { SessionMetaInput } from './SessionMetaInput';
 
 interface StartSessionModalProps {
   presetName: string;
   duration: number;
+  focusModeEnabled: boolean;
+  onFocusModeChange: (enabled: boolean) => void;
   onStart: (note: string, tags: string[]) => void;
   onSkip: () => void;
   onCancel: () => void;
 }
 
-export function StartSessionModal({ presetName, duration, onStart, onSkip, onCancel }: StartSessionModalProps) {
+export function StartSessionModal({ presetName, duration, focusModeEnabled, onFocusModeChange, onStart, onSkip, onCancel }: StartSessionModalProps) {
   const [note, setNote] = useState('');
   const [tags, setTags] = useState<string[]>([]);
 
@@ -32,6 +35,13 @@ export function StartSessionModal({ presetName, duration, onStart, onSkip, onCan
           tags={tags}
           onUpdate={(n, t) => { setNote(n); setTags(t); }}
         />
+        <div className="flex items-center justify-between mt-4 px-1">
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm">Focus Mode</span>
+          </div>
+          <Switch checked={focusModeEnabled} onCheckedChange={onFocusModeChange} />
+        </div>
         <div className="flex gap-2 mt-5">
           <Button variant="outline" onClick={onSkip} className="flex-1">
             Skip

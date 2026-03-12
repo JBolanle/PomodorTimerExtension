@@ -553,8 +553,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 const messageHandlers = {
   startTimer: async (msg) => {
     if (timerState.state !== 'idle') return { success: false };
-    const { phase, minutes } = msg;
-    return await doStartTimer(phase, minutes);
+    const { phase, minutes, focusMode } = msg;
+    return await doStartTimer(phase, minutes, focusMode);
   },
   pauseTimer: async () => {
     if (timerState.state !== 'running') return { success: false };
@@ -635,7 +635,7 @@ const messageHandlers = {
 
   getFocusModeSettings: async () => {
     const { focusModeSettings } = await chrome.storage.local.get('focusModeSettings');
-    return focusModeSettings || DEFAULT_FOCUS_MODE_SETTINGS;
+    return { settings: focusModeSettings || DEFAULT_FOCUS_MODE_SETTINGS };
   },
 
   updateFocusModeSettings: async (msg) => {
@@ -671,7 +671,7 @@ const messageHandlers = {
 
 // --- Timer Operations ---
 
-async function doStartTimer(phase, minutes) {
+async function doStartTimer(phase, minutes, focusMode) {
   const sessionTotalMs = minutes * 60000;
   const endTime = Date.now() + sessionTotalMs;
 
@@ -705,8 +705,8 @@ async function doStartTimer(phase, minutes) {
   // Cancel any pending auto-start
   chrome.alarms.clear(AUTO_START_ALARM).catch(() => {});
   startBadgeAlarm();
-  // Enable focus mode for work sessions
-  if (phase === 'work') {
+  // Enable focus mode for work sessions (only if focusMode !== false)
+  if (phase === 'work' && focusMode !== false) {
     enableFocusMode();
   }
   return { success: true };
