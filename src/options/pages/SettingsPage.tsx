@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { ThemePicker } from '@/components/settings/ThemePicker';
 import { ModeToggle } from '@/components/settings/ModeToggle';
+import { KeyboardShortcuts } from '@/components/settings/KeyboardShortcuts';
 import type { Preset } from '@/types';
 
 function PresetEditor({ preset, onSave, onDelete, isDefault, readOnly }: {
@@ -235,6 +236,65 @@ export function SettingsPage() {
               />
             </div>
           )}
+          {settings.soundEnabled && isAdvanced && (
+            <>
+              <div className="flex items-center justify-between">
+                <label className="text-sm text-muted-foreground">
+                  Different sounds per phase
+                </label>
+                <Switch
+                  checked={settings.soundPerPhase}
+                  onCheckedChange={(checked) => updateSettings({ soundPerPhase: checked })}
+                />
+              </div>
+              {settings.soundPerPhase && (
+                <div className="space-y-3 pl-2 border-l-2 border-muted">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm text-muted-foreground">Work complete</label>
+                    <select
+                      value={settings.workCompleteSound}
+                      onChange={(e) => updateSettings({ workCompleteSound: e.target.value })}
+                      className="text-sm border rounded-md px-2 py-1 bg-background text-foreground"
+                    >
+                      <option value="default">Default</option>
+                      <option value="work">Work Complete</option>
+                      <option value="short-break">Short Break</option>
+                      <option value="long-break">Long Break</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm text-muted-foreground">Break complete</label>
+                    <select
+                      value={settings.breakCompleteSound}
+                      onChange={(e) => updateSettings({ breakCompleteSound: e.target.value })}
+                      className="text-sm border rounded-md px-2 py-1 bg-background text-foreground"
+                    >
+                      <option value="default">Default</option>
+                      <option value="short-break">Short Break</option>
+                      <option value="long-break">Long Break</option>
+                      <option value="work">Work Complete</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+          <div className="flex items-center justify-between">
+            <label className="text-sm text-muted-foreground">
+              Show break suggestions
+            </label>
+            <Switch
+              checked={settings.showBreakTips}
+              onCheckedChange={(checked) => updateSettings({ showBreakTips: checked })}
+            />
+          </div>
+        </section>
+
+        <Separator />
+
+        {/* Keyboard Shortcuts */}
+        <section className="space-y-4">
+          <KeyboardShortcuts />
         </section>
 
         <Separator />

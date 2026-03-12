@@ -551,7 +551,7 @@ async function doSkip() {
 
   // Notify
   await sendNotification(getSkipMessage());
-  await playNotificationSound();
+  await playNotificationSound(timerState.currentPhase);
 
   // Auto-start if enabled
   if (timerState.autoStartNext) {
@@ -635,7 +635,7 @@ async function handleTimerComplete() {
   if (notificationsEnabled) {
     await sendNotification(getCompletionMessage());
   }
-  await playNotificationSound();
+  await playNotificationSound(timerState.currentPhase);
 
   // Auto-start if enabled
   const autoStart = settings?.autoStartNext ?? false;
@@ -758,13 +758,30 @@ async function ensureOffscreenDocument() {
   creatingOffscreen = null;
 }
 
-async function playNotificationSound() {
+const SOUNDS = {
+  default: 'sounds/notification.mp3',
+  work: 'sounds/work-complete.mp3',
+  'short-break': 'sounds/short-break-complete.mp3',
+  'long-break': 'sounds/long-break-complete.mp3',
+};
+
+function getSoundForPhase(phase, settings) {
+  if (!settings?.soundPerPhase) return SOUNDS.default;
+  if (phase === 'work') {
+    return SOUNDS[settings.workCompleteSound] || SOUNDS.work;
+  }
+  // Both shortBreak and longBreak use breakCompleteSound
+  return SOUNDS[settings.breakCompleteSound] || SOUNDS['short-break'];
+}
+
+async function playNotificationSound(phase) {
   try {
     const { settings } = await chrome.storage.local.get('settings');
     const soundEnabled = settings?.soundEnabled ?? true;
     if (!soundEnabled) return;
 
     const volume = settings?.soundVolume ?? 1.0;
+    const soundPath = getSoundForPhase(phase, settings);
 
     if (!chrome.offscreen) {
       // Firefox fallback — no offscreen API
@@ -774,7 +791,7 @@ async function playNotificationSound() {
     await ensureOffscreenDocument();
     await chrome.runtime.sendMessage({
       action: 'playSound',
-      sound: 'sounds/notification.mp3',
+      sound: soundPath,
       volume,
     });
   } catch (err) {

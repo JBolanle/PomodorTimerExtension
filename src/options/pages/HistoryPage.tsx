@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Upload } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { CollapsibleSection } from '@/components/history/CollapsibleSection';
 import { StatsOverview } from '@/components/history/StatsOverview';
@@ -7,6 +7,7 @@ import { InsightsContent } from '@/components/history/InsightsContent';
 import { HistoryList } from '@/components/history/HistoryList';
 import { DateFilter } from '@/components/history/DateFilter';
 import { ExportDropdown } from '@/components/history/ExportDropdown';
+import { ImportModal } from '@/components/history/ImportModal';
 import { ClearHistoryModal } from '@/components/history/ClearHistoryModal';
 import { useHistory } from '@/hooks/useHistory';
 import { usePresets } from '@/hooks/usePresets';
@@ -16,12 +17,19 @@ export function HistoryPage() {
   const { sessions, filteredSessions, clearHistory, filter, setFilter } = useHistory();
   const { presets } = usePresets();
   const [showClearModal, setShowClearModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <PageHeader title="History & Stats" description="View your completed sessions and productivity stats." />
-        <ExportDropdown sessions={sessions} presets={presets} disabled={sessions.length === 0} />
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowImportModal(true)}>
+            <Upload className="mr-1 h-4 w-4" />
+            Import
+          </Button>
+          <ExportDropdown sessions={sessions} presets={presets} disabled={sessions.length === 0} />
+        </div>
       </div>
 
       <CollapsibleSection title="Statistics" badge={`${filteredSessions.length} sessions`}>
@@ -55,6 +63,10 @@ export function HistoryPage() {
           onConfirm={() => { clearHistory(); setShowClearModal(false); }}
           onCancel={() => setShowClearModal(false)}
         />
+      )}
+
+      {showImportModal && (
+        <ImportModal onClose={() => setShowImportModal(false)} />
       )}
     </div>
   );

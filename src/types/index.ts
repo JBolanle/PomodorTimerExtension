@@ -39,6 +39,10 @@ export interface Settings {
   showBadge: boolean;
   soundEnabled: boolean;
   soundVolume: number;
+  soundPerPhase: boolean;
+  workCompleteSound: string;
+  breakCompleteSound: string;
+  showBreakTips: boolean;
 }
 
 export interface PhaseRecord {

@@ -27,6 +27,12 @@ export default defineConfig({
           manifest.permissions = manifest.permissions.filter(
             (p: string) => p !== "offscreen",
           );
+          // Firefox uses _execute_browser_action instead of _execute_action
+          if (manifest.commands?._execute_action) {
+            manifest.commands._execute_browser_action =
+              manifest.commands._execute_action;
+            delete manifest.commands._execute_action;
+          }
           manifest.browser_specific_settings = {
             gecko: {
               id: "pomodoro-timer@example.com",

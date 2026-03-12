@@ -16,6 +16,10 @@ export const DEFAULTS: Settings = {
   showBadge: true,
   soundEnabled: true,
   soundVolume: 1.0,
+  soundPerPhase: true,
+  workCompleteSound: 'work',
+  breakCompleteSound: 'short-break',
+  showBreakTips: true,
 };
 
 export const THEMES: Theme[] = ['arctic', 'obsidian', 'ember'];

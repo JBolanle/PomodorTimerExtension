@@ -2,10 +2,13 @@ import { useCallback } from 'react';
 import { useTimerState } from '@/hooks/useTimerState';
 import { useTheme } from '@/hooks/useTheme';
 import { usePresets } from '@/hooks/usePresets';
+import { useSettings } from '@/hooks/useSettings';
+import { usePopupShortcuts } from '@/hooks/usePopupShortcuts';
 import { TimerDisplay } from '@/components/timer/TimerDisplay';
 import { PresetSelector } from '@/components/timer/PresetSelector';
 import { TimerControls } from '@/components/timer/TimerControls';
 import { SessionDots } from '@/components/timer/SessionDots';
+import { BreakTipDisplay } from '@/components/timer/BreakTip';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { THEMES, THEME_META } from '@/lib/constants';
@@ -33,6 +36,11 @@ export default function App() {
 
   const { theme, setTheme } = useTheme();
   const { presets, activePreset, activePresetId, selectPreset } = usePresets();
+  const { settings } = useSettings();
+
+  const showBreakTip = settings.showBreakTips &&
+    (currentPhase === 'shortBreak' || currentPhase === 'longBreak') &&
+    (timerState === 'running' || timerState === 'paused' || timerState === 'transition');
 
   const handleStart = useCallback(() => {
     startTimer('work', activePreset.workMinutes);
@@ -41,6 +49,19 @@ export default function App() {
   const handleStartNext = useCallback(() => {
     startNext();
   }, [startNext]);
+
+  const handleToggle = useCallback(() => {
+    if (timerState === 'running') pauseTimer();
+    else if (timerState === 'paused') resumeTimer();
+    else if (timerState === 'idle') startTimer('work', activePreset.workMinutes);
+    else if (timerState === 'transition') startNext();
+  }, [timerState, pauseTimer, resumeTimer, startTimer, startNext, activePreset]);
+
+  usePopupShortcuts({
+    onToggle: handleToggle,
+    onSkip: skipPhase,
+    onReset: endActivity,
+  });
 
   const cycleTheme = useCallback(() => {
     const idx = THEMES.indexOf(theme);
@@ -85,6 +106,8 @@ export default function App() {
         suggestedNext={suggestedNext}
       />
 
+      <BreakTipDisplay visible={showBreakTip} />
+
       <TimerControls
         timerState={timerState}
         suggestedNext={suggestedNext}
@@ -103,23 +126,28 @@ export default function App() {
 
       <Separator className="my-1" />
 
-      <footer className="w-full flex items-center justify-between">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={cycleTheme}
-          className="text-xs text-muted-foreground"
-        >
-          {THEME_META[theme].label}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleOpenSettings}
-          className="text-xs text-muted-foreground"
-        >
-          Settings
-        </Button>
+      <footer className="w-full flex flex-col gap-1">
+        <div className="flex items-center justify-between">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={cycleTheme}
+            className="text-xs text-muted-foreground"
+          >
+            {THEME_META[theme].label}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleOpenSettings}
+            className="text-xs text-muted-foreground"
+          >
+            Settings
+          </Button>
+        </div>
+        <span className="text-[10px] text-muted-foreground/50 text-center">
+          Space: start/pause &middot; S: skip &middot; R: reset &middot; Esc: close
+        </span>
       </footer>
     </div>
   );
