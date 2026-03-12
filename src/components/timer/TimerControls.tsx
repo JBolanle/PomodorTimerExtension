@@ -31,7 +31,7 @@ export function TimerControls({
   if (timerState === 'idle') {
     return (
       <div className="flex flex-col items-center gap-2">
-        <Button size="lg" className="min-w-[120px] btn-press" onClick={onStart}>
+        <Button size="lg" className="min-w-[120px] btn-press" onClick={onStart} aria-label="Start timer">
           Start
         </Button>
       </div>
@@ -42,7 +42,7 @@ export function TimerControls({
     const nextLabel = suggestedNext ? PHASE_LABELS[suggestedNext] : 'Next';
     return (
       <div className="flex flex-col items-center gap-2">
-        <Button size="lg" className="min-w-[120px] btn-press" onClick={onStartNext}>
+        <Button size="lg" className="min-w-[120px] btn-press" onClick={onStartNext} aria-label={`Start ${nextLabel}`}>
           Start {nextLabel}
         </Button>
         <Button
@@ -50,6 +50,7 @@ export function TimerControls({
           size="sm"
           className="text-xs text-muted-foreground"
           onClick={onEndActivity}
+          aria-label="End activity"
         >
           End Activity
         </Button>
@@ -64,6 +65,7 @@ export function TimerControls({
         size="lg"
         className="min-w-[120px] btn-press"
         onClick={timerState === 'running' ? onPause : onResume}
+        aria-label={timerState === 'running' ? 'Pause timer' : 'Resume timer'}
       >
         {timerState === 'running' ? 'Pause' : 'Resume'}
       </Button>
@@ -73,6 +75,7 @@ export function TimerControls({
           size="sm"
           className="text-xs text-muted-foreground"
           onClick={onSkip}
+          aria-label={`Skip to ${suggestedNext ? PHASE_LABELS[suggestedNext] : 'next phase'}`}
         >
           Skip
         </Button>
@@ -81,6 +84,7 @@ export function TimerControls({
           size="sm"
           className="text-xs text-muted-foreground"
           onClick={onEndActivity}
+          aria-label="End activity"
         >
           End Activity
         </Button>

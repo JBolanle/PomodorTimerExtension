@@ -32,7 +32,7 @@ export function CurrentSessionMeta({ visible }: { visible: boolean }) {
       <div className="w-full p-3 bg-muted/30 rounded-lg space-y-3">
         <SessionMetaInput note={note} tags={tags} onUpdate={saveMeta} />
         <Button size="sm" onClick={() => setIsEditing(false)} className="w-full gap-2">
-          <Check className="w-4 h-4" />
+          <Check className="w-4 h-4" aria-hidden="true" />
           Done
         </Button>
       </div>
@@ -56,8 +56,8 @@ export function CurrentSessionMeta({ visible }: { visible: boolean }) {
           )}
           {note && <p className="text-sm text-muted-foreground truncate">{note}</p>}
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)} className="shrink-0 h-8 w-8">
-          <Edit2 className="w-4 h-4" />
+        <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)} className="shrink-0 h-8 w-8" aria-label="Edit session note">
+          <Edit2 className="w-4 h-4" aria-hidden="true" />
         </Button>
       </div>
     );
@@ -65,7 +65,7 @@ export function CurrentSessionMeta({ visible }: { visible: boolean }) {
 
   return (
     <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="w-full text-muted-foreground">
-      <Edit2 className="w-4 h-4 mr-2" />
+      <Edit2 className="w-4 h-4 mr-2" aria-hidden="true" />
       Add note or tags
     </Button>
   );
