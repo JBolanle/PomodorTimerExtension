@@ -667,6 +667,8 @@ const messageHandlers = {
       return { active: false, blockedCount: 0, temporaryAllows: [] };
     }
   },
+
+  ping: async () => ({ success: true, timestamp: Date.now() }),
 };
 
 // --- Timer Operations ---
