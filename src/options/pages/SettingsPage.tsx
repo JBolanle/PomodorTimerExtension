@@ -11,6 +11,7 @@ import { ThemePicker } from '@/components/settings/ThemePicker';
 import { ModeToggle } from '@/components/settings/ModeToggle';
 import { KeyboardShortcuts } from '@/components/settings/KeyboardShortcuts';
 import { FocusModeSettings } from '@/components/settings/FocusModeSettings';
+import { useAnnounce } from '@/components/Announcer';
 import type { Preset } from '@/types';
 
 function PresetEditor({ preset, onSave, onDelete, isDefault, readOnly }: {
@@ -44,11 +45,11 @@ function PresetEditor({ preset, onSave, onDelete, isDefault, readOnly }: {
         </div>
         {!readOnly && (
           <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
+            <Button variant="ghost" size="sm" onClick={() => setEditing(true)} aria-label={`Edit preset ${preset.name}`}>
               Edit
             </Button>
             {!isDefault && onDelete && (
-              <Button variant="ghost" size="sm" onClick={() => onDelete(preset.id)}>
+              <Button variant="ghost" size="sm" onClick={() => onDelete(preset.id)} aria-label={`Delete preset ${preset.name}`}>
                 Delete
               </Button>
             )}
@@ -61,8 +62,9 @@ function PresetEditor({ preset, onSave, onDelete, isDefault, readOnly }: {
   return (
     <div className="p-4 rounded-md border space-y-4">
       <div className="space-y-1">
-        <label className="text-sm text-muted-foreground">Name</label>
+        <label htmlFor="preset-name" className="text-sm text-muted-foreground">Name</label>
         <input
+          id="preset-name"
           type="text"
           value={draft.name}
           onChange={(e) => setDraft({ ...draft, name: e.target.value })}
@@ -75,7 +77,7 @@ function PresetEditor({ preset, onSave, onDelete, isDefault, readOnly }: {
           <label className="text-sm text-muted-foreground">Work</label>
           <span className="text-sm font-medium tabular-nums">{draft.workMinutes} min</span>
         </div>
-        <Slider value={[draft.workMinutes]} onValueChange={([v]) => setDraft({ ...draft, workMinutes: v })} min={1} max={60} step={1} />
+        <Slider value={[draft.workMinutes]} onValueChange={([v]) => setDraft({ ...draft, workMinutes: v })} min={1} max={60} step={1} aria-valuetext={`${draft.workMinutes} minutes`} />
       </div>
 
       <div className="space-y-2">
@@ -83,7 +85,7 @@ function PresetEditor({ preset, onSave, onDelete, isDefault, readOnly }: {
           <label className="text-sm text-muted-foreground">Short Break</label>
           <span className="text-sm font-medium tabular-nums">{draft.shortBreakMinutes} min</span>
         </div>
-        <Slider value={[draft.shortBreakMinutes]} onValueChange={([v]) => setDraft({ ...draft, shortBreakMinutes: v })} min={1} max={30} step={1} />
+        <Slider value={[draft.shortBreakMinutes]} onValueChange={([v]) => setDraft({ ...draft, shortBreakMinutes: v })} min={1} max={30} step={1} aria-valuetext={`${draft.shortBreakMinutes} minutes`} />
       </div>
 
       <div className="space-y-2">
@@ -91,7 +93,7 @@ function PresetEditor({ preset, onSave, onDelete, isDefault, readOnly }: {
           <label className="text-sm text-muted-foreground">Long Break</label>
           <span className="text-sm font-medium tabular-nums">{draft.longBreakMinutes} min</span>
         </div>
-        <Slider value={[draft.longBreakMinutes]} onValueChange={([v]) => setDraft({ ...draft, longBreakMinutes: v })} min={1} max={60} step={1} />
+        <Slider value={[draft.longBreakMinutes]} onValueChange={([v]) => setDraft({ ...draft, longBreakMinutes: v })} min={1} max={60} step={1} aria-valuetext={`${draft.longBreakMinutes} minutes`} />
       </div>
 
       <div className="space-y-2">
@@ -99,7 +101,7 @@ function PresetEditor({ preset, onSave, onDelete, isDefault, readOnly }: {
           <label className="text-sm text-muted-foreground">Sessions before long break</label>
           <span className="text-sm font-medium tabular-nums">{draft.sessionsBeforeLongBreak}</span>
         </div>
-        <Slider value={[draft.sessionsBeforeLongBreak]} onValueChange={([v]) => setDraft({ ...draft, sessionsBeforeLongBreak: v })} min={1} max={10} step={1} />
+        <Slider value={[draft.sessionsBeforeLongBreak]} onValueChange={([v]) => setDraft({ ...draft, sessionsBeforeLongBreak: v })} min={1} max={10} step={1} aria-valuetext={`${draft.sessionsBeforeLongBreak} sessions`} />
       </div>
 
       <div className="flex gap-2">
@@ -114,6 +116,7 @@ export function SettingsPage() {
   const { settings, updateSettings, resetSettings } = useSettings();
   const { presets, savePreset, removePreset } = usePresets();
   const { mode, setMode, isAdvanced } = useAppMode();
+  const announce = useAnnounce();
 
   const handleAddPreset = () => {
     const newPreset: Preset = {
@@ -243,6 +246,7 @@ export function SettingsPage() {
                 min={0}
                 max={100}
                 step={5}
+                aria-valuetext={`${Math.round(settings.soundVolume * 100)} percent`}
               />
             </div>
           )}
@@ -265,6 +269,7 @@ export function SettingsPage() {
                       value={settings.workCompleteSound}
                       onChange={(e) => updateSettings({ workCompleteSound: e.target.value })}
                       className="text-sm border rounded-md px-2 py-1 bg-background text-foreground"
+                      aria-label="Work complete sound"
                     >
                       <option value="default">Default</option>
                       <option value="work">Work Complete</option>
@@ -278,6 +283,7 @@ export function SettingsPage() {
                       value={settings.breakCompleteSound}
                       onChange={(e) => updateSettings({ breakCompleteSound: e.target.value })}
                       className="text-sm border rounded-md px-2 py-1 bg-background text-foreground"
+                      aria-label="Break complete sound"
                     >
                       <option value="default">Default</option>
                       <option value="short-break">Short Break</option>
@@ -317,7 +323,7 @@ export function SettingsPage() {
 
         <Separator />
 
-        <Button variant="outline" onClick={resetSettings}>
+        <Button variant="outline" onClick={() => { resetSettings(); announce('Settings restored to defaults'); }}>
           Restore Defaults
         </Button>
       </div>

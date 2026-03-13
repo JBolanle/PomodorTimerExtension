@@ -63,11 +63,11 @@ function TrendRow({ label, current, change }: TrendRowProps) {
               : 'bg-red-500/20 text-red-400'
         }`}>
           {isNeutral ? (
-            <Minus className="w-3 h-3" />
+            <Minus className="w-3 h-3" aria-hidden="true" />
           ) : isPositive ? (
-            <TrendingUp className="w-3 h-3" />
+            <TrendingUp className="w-3 h-3" aria-hidden="true" />
           ) : (
-            <TrendingDown className="w-3 h-3" />
+            <TrendingDown className="w-3 h-3" aria-hidden="true" />
           )}
           <span>{isNeutral ? '0%' : `${isPositive ? '+' : ''}${change}%`}</span>
         </div>

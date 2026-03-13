@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { parseImportFile, importData, type ImportResult } from '@/lib/import';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 type Step = 'select' | 'preview' | 'importing' | 'result';
 
@@ -18,6 +19,17 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const previousFocus = useRef<Element | null>(null);
+  const modalRef = useFocusTrap(true, onClose);
+
+  useEffect(() => {
+    previousFocus.current = document.activeElement;
+    return () => {
+      if (previousFocus.current instanceof HTMLElement) {
+        previousFocus.current.focus();
+      }
+    };
+  }, []);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -47,9 +59,17 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-background border rounded-lg shadow-lg p-6 w-full max-w-md space-y-4">
-        <h2 className="text-lg font-semibold">Import Data</h2>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="import-modal-title"
+    >
+      <div
+        ref={modalRef}
+        className="bg-background border rounded-lg shadow-lg p-6 w-full max-w-md space-y-4"
+      >
+        <h2 id="import-modal-title" className="text-lg font-semibold">Import Data</h2>
 
         {error && (
           <p className="text-sm text-destructive">{error}</p>
@@ -66,6 +86,7 @@ export function ImportModal({ onClose }: { onClose: () => void }) {
               accept=".json"
               onChange={handleFileSelect}
               className="text-sm"
+              aria-label="Select backup file"
             />
             <div className="flex justify-end">
               <Button variant="ghost" onClick={onClose}>Cancel</Button>

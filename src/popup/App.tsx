@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTimerState } from '@/hooks/useTimerState';
 import { useTheme } from '@/hooks/useTheme';
 import { usePresets } from '@/hooks/usePresets';
@@ -15,6 +15,7 @@ import { CurrentSessionMeta } from '@/components/timer/CurrentSessionMeta';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { THEMES, THEME_META } from '@/lib/constants';
+import { useAnnounce } from '@/components/Announcer';
 
 const PHASE_LABELS = {
   work: 'Work',
@@ -107,6 +108,45 @@ export default function App() {
     onReset: endActivity,
   });
 
+  const announce = useAnnounce();
+
+  const prevStateRef = useRef(timerState);
+  const prevPhaseRef = useRef(currentPhase);
+
+  useEffect(() => {
+    const prevState = prevStateRef.current;
+    prevStateRef.current = timerState;
+
+    if (prevState === timerState) return;
+
+    if (timerState === 'running' && prevState === 'idle') {
+      announce('Timer started');
+    } else if (timerState === 'running' && prevState === 'paused') {
+      announce('Timer resumed');
+    } else if (timerState === 'paused' && prevState === 'running') {
+      announce('Timer paused');
+    } else if (timerState === 'transition') {
+      announce('Session completed');
+    } else if (timerState === 'idle' && prevState !== 'idle') {
+      announce('Activity ended');
+    }
+  }, [timerState, announce]);
+
+  useEffect(() => {
+    const prevPhase = prevPhaseRef.current;
+    prevPhaseRef.current = currentPhase;
+
+    if (prevPhase === currentPhase) return;
+
+    if (timerState === 'running') {
+      if (currentPhase === 'work') {
+        announce('Work session started');
+      } else {
+        announce('Break time!');
+      }
+    }
+  }, [currentPhase, timerState, announce]);
+
   const cycleTheme = useCallback(() => {
     const idx = THEMES.indexOf(theme);
     const next = THEMES[(idx + 1) % THEMES.length];
@@ -156,7 +196,7 @@ export default function App() {
 
       {focusModeActive && (
         <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full">
-          <svg className="w-3.5 h-3.5 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg aria-hidden="true" className="w-3.5 h-3.5 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
           </svg>
           <span className="text-xs text-green-500 font-medium">Focus Mode</span>
@@ -177,6 +217,8 @@ export default function App() {
       <SessionDots
         completedSessions={workSessionsCompleted}
         total={activePreset.sessionsBeforeLongBreak}
+        currentPhase={currentPhase}
+        timerState={timerState}
       />
 
       <Separator className="my-1" />
@@ -187,6 +229,7 @@ export default function App() {
             variant="ghost"
             size="sm"
             onClick={cycleTheme}
+            aria-label={`Switch theme, current: ${THEME_META[theme].label}`}
             className="text-xs text-muted-foreground"
           >
             {THEME_META[theme].label}
@@ -195,6 +238,7 @@ export default function App() {
             variant="ghost"
             size="sm"
             onClick={handleOpenSettings}
+            aria-label="Open settings"
             className="text-xs text-muted-foreground"
           >
             Settings

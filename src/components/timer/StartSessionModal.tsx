@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Play, Shield, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { SessionMetaInput } from './SessionMetaInput';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 interface StartSessionModalProps {
   presetName: string;
@@ -17,14 +18,30 @@ interface StartSessionModalProps {
 export function StartSessionModal({ presetName, duration, focusModeEnabled, onFocusModeChange, onStart, onSkip, onCancel }: StartSessionModalProps) {
   const [note, setNote] = useState('');
   const [tags, setTags] = useState<string[]>([]);
+  const previousFocus = useRef<Element | null>(null);
+  const modalRef = useFocusTrap(true, onCancel);
+
+  useEffect(() => {
+    previousFocus.current = document.activeElement;
+    return () => {
+      if (previousFocus.current instanceof HTMLElement) {
+        previousFocus.current.focus();
+      }
+    };
+  }, []);
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-background border border-border rounded-lg p-5 w-[340px] max-w-[90vw]">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="start-session-title"
+    >
+      <div ref={modalRef} className="bg-background border border-border rounded-lg p-5 w-[340px] max-w-[90vw]">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold">Start Work Session</h3>
-          <Button variant="ghost" size="icon" onClick={onCancel}>
-            <X className="w-4 h-4" />
+          <h3 id="start-session-title" className="font-semibold">Start Work Session</h3>
+          <Button variant="ghost" size="icon" onClick={onCancel} aria-label="Close">
+            <X className="w-4 h-4" aria-hidden="true" />
           </Button>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
@@ -37,7 +54,7 @@ export function StartSessionModal({ presetName, duration, focusModeEnabled, onFo
         />
         <div className="flex items-center justify-between mt-4 px-1">
           <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-muted-foreground" />
+            <Shield className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <span className="text-sm">Focus Mode</span>
           </div>
           <Switch checked={focusModeEnabled} onCheckedChange={onFocusModeChange} />
@@ -47,7 +64,7 @@ export function StartSessionModal({ presetName, duration, focusModeEnabled, onFo
             Skip
           </Button>
           <Button onClick={() => onStart(note, tags)} className="flex-1 gap-2">
-            <Play className="w-4 h-4" />
+            <Play className="w-4 h-4" aria-hidden="true" />
             Start
           </Button>
         </div>

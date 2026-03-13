@@ -85,6 +85,8 @@ export function TimerPage() {
         <SessionDots
           completedSessions={workSessionsCompleted}
           total={activePreset.sessionsBeforeLongBreak}
+          currentPhase={currentPhase}
+          timerState={timerState}
         />
       </div>
     </div>

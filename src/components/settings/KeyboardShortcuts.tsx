@@ -59,7 +59,7 @@ export function KeyboardShortcuts() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
-          <Keyboard className="w-4 h-4" />
+          <Keyboard className="w-4 h-4" aria-hidden="true" />
           Keyboard Shortcuts
         </h3>
         <Button
@@ -69,7 +69,7 @@ export function KeyboardShortcuts() {
           className="text-xs"
         >
           Customize
-          <ExternalLink className="w-3 h-3 ml-1" />
+          <ExternalLink className="w-3 h-3 ml-1" aria-hidden="true" />
         </Button>
       </div>
 
