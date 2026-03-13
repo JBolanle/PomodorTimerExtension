@@ -5,6 +5,8 @@ import { usePresets } from '@/hooks/usePresets';
 import { useSettings } from '@/hooks/useSettings';
 import { useAppMode } from '@/hooks/useAppMode';
 import { usePopupShortcuts } from '@/hooks/usePopupShortcuts';
+import { useConnectionStatus } from '@/hooks/useConnectionStatus';
+import { useToast } from '@/components/ui/toast';
 import { TimerDisplay } from '@/components/timer/TimerDisplay';
 import { PresetSelector } from '@/components/timer/PresetSelector';
 import { TimerControls } from '@/components/timer/TimerControls';
@@ -16,6 +18,8 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { THEMES, THEME_META } from '@/lib/constants';
 import { useAnnounce } from '@/components/Announcer';
+import { sendMessage } from '@/lib/messaging';
+import { formatError } from '@/lib/errorMessages';
 
 const PHASE_LABELS = {
   work: 'Work',
@@ -42,6 +46,8 @@ export default function App() {
   const { presets, activePreset, activePresetId, selectPreset } = usePresets();
   const { settings } = useSettings();
   const { isAdvanced } = useAppMode();
+  const connected = useConnectionStatus();
+  const toast = useToast();
   const [showStartModal, setShowStartModal] = useState(false);
   const [focusModeActive, setFocusModeActive] = useState(false);
   const [focusModeEnabled, setFocusModeEnabled] = useState(true);
@@ -81,10 +87,14 @@ export default function App() {
   }, [isAdvanced, activePreset, startTimer]);
 
   const handleStartWithMeta = useCallback(async (note: string, tags: string[]) => {
-    await chrome.runtime.sendMessage({ action: 'setSessionMeta', note, tags }).catch(() => {});
+    try {
+      await sendMessage('setSessionMeta', { note, tags });
+    } catch (err) {
+      toast.error(formatError(err));
+    }
     startTimer('work', activePreset.workMinutes, focusModeEnabled);
     setShowStartModal(false);
-  }, [activePreset, startTimer, focusModeEnabled]);
+  }, [activePreset, startTimer, focusModeEnabled, toast]);
 
   const handleStartWithoutMeta = useCallback(() => {
     startTimer('work', activePreset.workMinutes, focusModeEnabled);
@@ -161,6 +171,21 @@ export default function App() {
 
   return (
     <div className="w-[350px] p-6 flex flex-col items-center gap-4">
+      {!connected && (
+        <div
+          role="alert"
+          className="w-full px-3 py-2 text-xs text-amber-700 bg-amber-500/10 border border-amber-500/30 rounded-md flex items-center justify-between"
+        >
+          <span>Connection lost</span>
+          <button
+            onClick={() => window.location.reload()}
+            className="underline font-medium hover:text-amber-900"
+          >
+            Reload
+          </button>
+        </div>
+      )}
+
       {timerState === 'idle' && (
         <PresetSelector
           presets={presets}

@@ -75,14 +75,36 @@ function startTimerPolling() {
   setInterval(updateTimer, 1000);
 }
 
+function handleCommunicationError() {
+  const display = document.getElementById('timer-display');
+  display.textContent = '--:--';
+
+  let errorEl = document.getElementById('error-status');
+  if (!errorEl) {
+    errorEl = document.createElement('p');
+    errorEl.id = 'error-status';
+    errorEl.style.color = '#d97706';
+    errorEl.style.fontSize = '0.85rem';
+    errorEl.textContent = 'Unable to connect to extension';
+    display.parentNode.insertBefore(errorEl, display.nextSibling);
+  }
+  errorEl.style.display = '';
+
+  setTimeout(updateTimer, 2000);
+}
+
 function updateTimer() {
   chrome.runtime.sendMessage({ action: 'getState' }, (response) => {
     if (chrome.runtime.lastError || !response) {
+      handleCommunicationError();
       return;
     }
 
     const display = document.getElementById('timer-display');
     const { state, currentPhase, endTime, remainingMs } = response;
+
+    const errorEl = document.getElementById('error-status');
+    if (errorEl) errorEl.remove();
 
     if (state === 'running' && currentPhase === 'work') {
       const remaining = endTime - Date.now();
