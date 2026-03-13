@@ -5,21 +5,24 @@ const FOCUSABLE_SELECTOR =
 
 export function useFocusTrap(isActive: boolean, onEscape?: () => void) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const onEscapeRef = useRef(onEscape);
+  onEscapeRef.current = onEscape;
 
   useEffect(() => {
     if (!isActive || !containerRef.current) return;
 
     const container = containerRef.current;
-    const focusableElements = container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
-    const firstElement = focusableElements[0];
-    const lastElement = focusableElements[focusableElements.length - 1];
 
-    firstElement?.focus();
+    // Defer initial focus to next frame so React children are flushed
+    const rafId = requestAnimationFrame(() => {
+      const focusableElements = container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      focusableElements[0]?.focus();
+    });
 
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape' && onEscape) {
+      if (e.key === 'Escape' && onEscapeRef.current) {
         e.preventDefault();
-        onEscape();
+        onEscapeRef.current();
         return;
       }
 
@@ -40,8 +43,11 @@ export function useFocusTrap(isActive: boolean, onEscape?: () => void) {
     }
 
     container.addEventListener('keydown', handleKeyDown);
-    return () => container.removeEventListener('keydown', handleKeyDown);
-  }, [isActive, onEscape]);
+    return () => {
+      cancelAnimationFrame(rafId);
+      container.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isActive]);
 
   return containerRef;
 }
