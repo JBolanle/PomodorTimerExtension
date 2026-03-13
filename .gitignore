@@ -6,4 +6,5 @@ dist/
 dist-firefox/
 *.zip
 .superpowers/
+.worktrees/
 docs/superpowers/
