@@ -57,6 +57,18 @@ export interface StorageSchema {
 
   // --- In-progress session grouping ---
   currentSession: CurrentSessionRecord | null;
+
+  // --- Focus mode runtime state (persisted so SW restart doesn't lose it) ---
+  focusRuleMap: Record<string, number>;
+  focusTemporaryAllows: Record<string, FocusTemporaryAllowPersisted>;
+}
+
+/** Persisted form of a temporary allow entry. Uses `null` (not
+ *  `undefined`) for missing ruleId because `chrome.storage` drops
+ *  `undefined` values. */
+export interface FocusTemporaryAllowPersisted {
+  ruleId: number | null;
+  expiresAt: number;
 }
 
 export type StorageKey = keyof StorageSchema;

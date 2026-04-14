@@ -34,6 +34,14 @@ export const currentSessionRepo = new StorageAdapter(
   'currentSession',
   STORAGE_DEFAULTS.currentSession,
 );
+export const focusRuleMapRepo = new StorageAdapter(
+  'focusRuleMap',
+  STORAGE_DEFAULTS.focusRuleMap,
+);
+export const focusTemporaryAllowsRepo = new StorageAdapter(
+  'focusTemporaryAllows',
+  STORAGE_DEFAULTS.focusTemporaryAllows,
+);
 
 /** Composite repo for the split `TIMER_STATE_KEYS` — reads and writes
  *  the 14 individual keys as a single object. */
