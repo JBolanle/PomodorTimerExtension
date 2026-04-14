@@ -5,8 +5,12 @@
 import { PREDEFINED_BLOCKLISTS } from '@/data/blocklists';
 import type { FocusModeSettings } from '@/shared/types';
 import { FOCUS_RULE_ID_BASE, FOCUS_RULE_ID_MAX } from '../constants';
-import { focusRuleMap, temporaryAllows } from '../state';
 import { focusModeRepo } from '../storage/repos';
+import {
+  clearFocusRules,
+  clearTemporaryAllows,
+  replaceFocusRules,
+} from './persist';
 
 const BLOCKLIST_DOMAINS: Record<string, string[]> = Object.fromEntries(
   PREDEFINED_BLOCKLISTS.map((c) => [c.id, c.domains]),
@@ -62,12 +66,13 @@ export async function enableFocusMode(): Promise<void> {
     if (domains.length === 0) return;
 
     const rules: chrome.declarativeNetRequest.Rule[] = [];
-    focusRuleMap.clear();
+    const newEntries: [string, number][] = [];
     domains.forEach((domain, i) => {
       const ruleId = FOCUS_RULE_ID_BASE + 1 + i;
-      focusRuleMap.set(domain, ruleId);
+      newEntries.push([domain, ruleId]);
       rules.push(buildBlockRule(domain, ruleId));
     });
+    replaceFocusRules(newEntries);
 
     const removeRuleIds = await currentFocusRuleIds();
     await chrome.declarativeNetRequest.updateDynamicRules({
@@ -94,8 +99,8 @@ export async function disableFocusMode(): Promise<void> {
         await chrome.alarms.clear(alarm.name);
       }
     }
-    focusRuleMap.clear();
-    temporaryAllows.clear();
+    clearFocusRules();
+    clearTemporaryAllows();
   } catch (err) {
     console.error('[Pomodoro] Failed to disable focus mode:', err);
   }

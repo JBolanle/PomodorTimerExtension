@@ -4,6 +4,7 @@
 import { POMODORO_ALARM } from './constants';
 import { startBadgeAlarm, updateBadge } from './badge';
 import { disableFocusMode, enableFocusMode } from './focusMode/controller';
+import { rehydrateFocusMode } from './focusMode/rehydrate';
 import { runMigrations } from './storage/migrations';
 import {
   currentSessionRepo,
@@ -82,6 +83,15 @@ export async function initialize(): Promise<void> {
     startBadgeAlarm();
   } else if (timerState.state === 'paused') {
     updateBadge();
+  }
+
+  // Focus mode rehydrate: restore in-memory Maps from storage and
+  // reconcile with the live dNR snapshot before any work-phase logic
+  // reads from them. Must not break SW boot on failure.
+  try {
+    await rehydrateFocusMode();
+  } catch (err) {
+    console.error('[Pomodoro] Focus mode rehydrate failed:', err);
   }
 
   // Focus mode recovery.

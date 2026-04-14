@@ -46,4 +46,8 @@ export const STORAGE_DEFAULTS: {
 
   // --- In-progress session grouping ---
   currentSession: null,
+
+  // --- Focus mode runtime state ---
+  focusRuleMap: {},
+  focusTemporaryAllows: {},
 };
