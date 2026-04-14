@@ -11,6 +11,8 @@
 // preset/settings/sessionHistory adjustments that accompanied it).
 
 import { DEFAULT_PRESET } from '@/shared/constants';
+import type { Session } from '@/shared/types';
+import { sessionStore } from '../sessions/sessionStore';
 
 type StorageSnapshot = Record<string, unknown>;
 
@@ -132,7 +134,29 @@ export const legacyBooleanStateMigration: Migration = {
   },
 };
 
-export const MIGRATIONS: Migration[] = [legacyBooleanStateMigration];
+/**
+ * Phase 5: move the `sessions` array from `chrome.storage.local` into
+ * IndexedDB so history can grow beyond the 200-session cap. After
+ * copying, the source key is removed.
+ */
+export const sessionsToIdbMigration: Migration = {
+  id: 'sessions-to-idb-v1',
+  shouldRun(snapshot) {
+    return Array.isArray(snapshot.sessions);
+  },
+  async run(snapshot) {
+    const sessions = (snapshot.sessions as Session[] | undefined) ?? [];
+    if (sessions.length > 0) {
+      await sessionStore.putMany(sessions);
+    }
+    await chrome.storage.local.remove('sessions');
+  },
+};
+
+export const MIGRATIONS: Migration[] = [
+  legacyBooleanStateMigration,
+  sessionsToIdbMigration,
+];
 
 /**
  * Run all applicable migrations against the current storage. Backs up

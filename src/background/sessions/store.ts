@@ -1,10 +1,11 @@
 // Session grouping: records a session covering one or more phases.
-// Persists closed sessions to `sessionsRepo` (capped at MAX_SESSIONS).
+// Persists closed sessions to the IndexedDB-backed `sessionStore`
+// (Phase 5 replaced the capped `sessionsRepo` with unbounded IDB).
 
 import type { CompletionType, PhaseRecord, Preset, TimerMode } from '@/shared/types';
-import { MAX_SESSIONS } from '../constants';
-import { sessionsRepo, tagHistoryRepo } from '../storage/repos';
+import { tagHistoryRepo } from '../storage/repos';
 import { runtime, timerState } from '../state';
+import { sessionStore } from './sessionStore';
 
 export function createNewSession(preset: Preset): void {
   runtime.currentSession = {
@@ -54,12 +55,7 @@ export async function closeCurrentSession(
   runtime.currentSession.endedAt = Date.now();
   runtime.currentSession.status = status;
   try {
-    const stored = await sessionsRepo.get();
-    stored.push(runtime.currentSession);
-    if (stored.length > MAX_SESSIONS) {
-      stored.splice(0, stored.length - MAX_SESSIONS);
-    }
-    await sessionsRepo.set(stored);
+    await sessionStore.put(runtime.currentSession);
     if (runtime.currentSession.tags && runtime.currentSession.tags.length > 0) {
       await addTagsToHistory(runtime.currentSession.tags);
     }

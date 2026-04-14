@@ -7,6 +7,8 @@
 //
 // Designed to be reset between tests via `installChromeMocks()`.
 
+import { IDBFactory } from 'fake-indexeddb';
+
 type Listener = (...args: any[]) => any;
 
 export interface ChromeMocks {
@@ -311,6 +313,22 @@ export function installChromeMocks(): ChromeMocks {
   // Provide a no-op URL global if needed.
   if (typeof (globalThis as any).crypto === "undefined") {
     (globalThis as any).crypto = { randomUUID: () => Math.random().toString(36).slice(2) };
+  }
+  // Fresh IndexedDB per test — swap in a new FDBFactory so any cached
+  // connections from the prior test are orphaned rather than blocking
+  // a `deleteDatabase` call. `vi.resetModules()` clears the cached
+  // `dbPromise` in `sessionStore`, so the next access reopens against
+  // this fresh factory.
+  (globalThis as any).indexedDB = new IDBFactory();
+  // BroadcastChannel isn't in happy-dom by default; provide a no-op.
+  if (typeof (globalThis as any).BroadcastChannel === "undefined") {
+    (globalThis as any).BroadcastChannel = class {
+      name: string;
+      onmessage: ((ev: MessageEvent) => void) | null = null;
+      constructor(name: string) { this.name = name; }
+      postMessage() { /* no-op */ }
+      close() { /* no-op */ }
+    };
   }
   return mocks;
 }

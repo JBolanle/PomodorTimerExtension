@@ -7,7 +7,6 @@ export const BADGE_ALARM = 'pomodoro-badge';
 export const FOCUS_REBLOCK_ALARM_PREFIX = 'focus-reblock-';
 
 export const AUTO_START_DELAY_SEC = 3;
-export const MAX_SESSIONS = 200;
 
 export const FOCUS_RULE_ID_BASE = 10000;
 export const FOCUS_RULE_ID_MAX = FOCUS_RULE_ID_BASE + 10000;

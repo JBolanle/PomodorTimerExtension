@@ -16,7 +16,6 @@ export {
   focusModeRepo,
   presetsRepo,
   sessionHistoryRepo,
-  sessionsRepo,
   settingsRepo,
   tagHistoryRepo,
   themeRepo,

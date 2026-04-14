@@ -23,8 +23,7 @@ export const STORAGE_DEFAULTS: {
   presets: [DEFAULT_PRESET],
   focusModeSettings: DEFAULT_FOCUS_MODE_SETTINGS,
 
-  // --- Session history ---
-  sessions: [],
+  // --- Session history (sessions moved to IDB in Phase 5) ---
   sessionHistory: [],
   tagHistory: [],
 

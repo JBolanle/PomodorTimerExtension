@@ -32,7 +32,10 @@ export interface StorageSchema {
   focusModeSettings: FocusModeSettings;
 
   // --- Session history ---
-  sessions: Session[];          // active grouped sessions (capped at 200 today)
+  // Phase 5: closed sessions now live in IndexedDB (see
+  // `src/background/sessions/sessionStore.ts`). The `sessions` key is
+  // still referenced by the Phase-5 migration but is no longer a
+  // chrome.storage.local schema entry.
   sessionHistory: Session[];    // legacy key used by import/export
   tagHistory: string[];
 

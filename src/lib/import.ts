@@ -1,5 +1,6 @@
 import type { Preset, Session } from '@/shared/types';
-import { presetsRepo, sessionHistoryRepo } from '@/lib/storage/client';
+import { presetsRepo } from '@/lib/storage/client';
+import { sessionStore } from '@/lib/sessions/client';
 
 interface ExportData {
   version: number;
@@ -46,7 +47,8 @@ export async function importData(
   mode: 'merge' | 'replace',
 ): Promise<ImportResult> {
   if (mode === 'replace') {
-    await sessionHistoryRepo.set(data.sessions);
+    await sessionStore.clear();
+    await sessionStore.putMany(data.sessions);
     if (data.presets.length > 0) {
       await presetsRepo.set(data.presets);
     }
@@ -57,12 +59,13 @@ export async function importData(
     };
   }
 
-  // Merge mode — deduplicate by ID
-  const existingSessions = await sessionHistoryRepo.get();
+  // Merge mode — deduplicate by ID against the current IDB contents.
+  const existingSessions = await sessionStore.getAll();
   const existingIds = new Set(existingSessions.map((s) => s.id));
   const newSessions = data.sessions.filter((s) => !existingIds.has(s.id));
-  const merged = [...existingSessions, ...newSessions];
-  await sessionHistoryRepo.set(merged);
+  if (newSessions.length > 0) {
+    await sessionStore.putMany(newSessions);
+  }
 
   let presetsImported = 0;
   if (data.presets.length > 0) {

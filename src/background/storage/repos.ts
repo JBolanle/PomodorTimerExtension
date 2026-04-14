@@ -14,7 +14,7 @@ import {
   type StorageSchema,
   type TimerStateKey,
 } from '@/shared/schema';
-import type { Preset, Session, Settings, Theme } from '@/shared/types';
+import type { Preset, Settings, Theme } from '@/shared/types';
 import { StorageAdapter } from './adapter';
 import { STORAGE_DEFAULTS } from './schema';
 
@@ -26,7 +26,6 @@ export const focusModeRepo = new StorageAdapter(
   STORAGE_DEFAULTS.focusModeSettings,
 );
 export const tagHistoryRepo = new StorageAdapter('tagHistory', STORAGE_DEFAULTS.tagHistory);
-export const sessionsRepo = new StorageAdapter('sessions', STORAGE_DEFAULTS.sessions);
 export const sessionHistoryRepo = new StorageAdapter(
   'sessionHistory',
   STORAGE_DEFAULTS.sessionHistory,
@@ -69,7 +68,6 @@ export const timerStateRepo = {
 type _CheckSettings = StorageSchema['settings'] extends Settings ? true : never;
 type _CheckTheme = StorageSchema['theme'] extends Theme ? true : never;
 type _CheckPresets = StorageSchema['presets'] extends Preset[] ? true : never;
-type _CheckSessions = StorageSchema['sessions'] extends Session[] ? true : never;
 type _CheckCurrentSession = StorageSchema['currentSession'] extends CurrentSessionRecord | null
   ? true
   : never;
@@ -78,7 +76,6 @@ const _sanity: [
   _CheckSettings,
   _CheckTheme,
   _CheckPresets,
-  _CheckSessions,
   _CheckCurrentSession,
-] = [true, true, true, true, true];
+] = [true, true, true, true];
 void _sanity;
