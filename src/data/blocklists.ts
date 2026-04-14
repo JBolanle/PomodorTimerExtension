@@ -7,12 +7,9 @@ export interface BlocklistCategory {
   enabled: boolean;
 }
 
-export interface FocusModeSettings {
-  enabled: boolean;
-  categories: Record<string, boolean>;
-  customDomains: string[];
-  allowOnceMinutes: number;
-}
+// FocusModeSettings now lives in `src/shared/types`; re-exported for
+// legacy import compatibility.
+export type { FocusModeSettings } from '@/shared/types';
 
 export const PREDEFINED_BLOCKLISTS: BlocklistCategory[] = [
   {
@@ -72,15 +69,4 @@ export const PREDEFINED_BLOCKLISTS: BlocklistCategory[] = [
   },
 ];
 
-export const DEFAULT_FOCUS_MODE_SETTINGS: FocusModeSettings = {
-  enabled: true,
-  categories: {
-    social: true,
-    video: true,
-    news: false,
-    shopping: false,
-    gaming: false,
-  },
-  customDomains: [],
-  allowOnceMinutes: 5,
-};
+export { DEFAULT_FOCUS_MODE_SETTINGS } from '@/shared/constants';

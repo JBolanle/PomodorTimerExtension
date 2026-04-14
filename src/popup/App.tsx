@@ -54,7 +54,7 @@ export default function App() {
 
   useEffect(() => {
     if (isAdvanced) {
-      chrome.runtime.sendMessage({ action: 'getFocusModeSettings' })
+      sendMessage('getFocusModeSettings')
         .then(res => setFocusModeEnabled(res?.settings?.enabled ?? true))
         .catch(() => {});
     }
@@ -62,7 +62,7 @@ export default function App() {
 
   useEffect(() => {
     if ((timerState === 'running' || timerState === 'paused') && currentPhase === 'work') {
-      chrome.runtime.sendMessage({ action: 'getFocusModeStatus' })
+      sendMessage('getFocusModeStatus')
         .then(res => setFocusModeActive(res?.active ?? false))
         .catch(() => setFocusModeActive(false));
     } else {

@@ -4,6 +4,7 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { PREDEFINED_BLOCKLISTS } from '@/data/blocklists';
 import type { FocusModeSettings } from '@/data/blocklists';
+import { sendMessage } from '@/lib/messaging';
 
 function normalizeDomain(raw: string): string | null {
   let s = raw.trim().toLowerCase();
@@ -24,21 +25,21 @@ export function FocusModeSettings() {
   const [inputError, setInputError] = useState('');
 
   useEffect(() => {
-    chrome.runtime.sendMessage({ action: 'getFocusModeSettings' }, (response) => {
-      if (response?.settings) {
-        setFocusSettings(response.settings);
-      }
-    });
-    chrome.runtime.sendMessage({ action: 'getFocusModeStatus' }, (response) => {
-      if (response?.active !== undefined) {
-        setIsActive(response.active);
-      }
-    });
+    sendMessage('getFocusModeSettings')
+      .then((response) => {
+        if (response?.settings) setFocusSettings(response.settings);
+      })
+      .catch(() => {});
+    sendMessage('getFocusModeStatus')
+      .then((response) => {
+        if (response?.active !== undefined) setIsActive(response.active);
+      })
+      .catch(() => {});
   }, []);
 
   function persist(updated: FocusModeSettings) {
     setFocusSettings(updated);
-    chrome.runtime.sendMessage({ action: 'updateFocusModeSettings', settings: updated });
+    sendMessage('updateFocusModeSettings', { settings: updated }).catch(() => {});
   }
 
   function handleMasterToggle(checked: boolean) {

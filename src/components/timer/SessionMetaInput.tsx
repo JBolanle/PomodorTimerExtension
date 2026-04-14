@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Tag, FileText, X } from 'lucide-react';
+import { sendMessage } from '@/lib/messaging';
 
 interface SessionMetaInputProps {
   note: string;
@@ -16,7 +17,7 @@ export function SessionMetaInput({ note, tags, onUpdate }: SessionMetaInputProps
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    chrome.runtime.sendMessage({ action: 'getTagHistory' }).then((res) => {
+    sendMessage('getTagHistory').then((res) => {
       if (Array.isArray(res)) setSuggestions(res);
     }).catch(() => {});
   }, []);

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { sendMessage } from '@/lib/messaging';
 
 export function useConnectionStatus(): boolean {
   const [connected, setConnected] = useState(true);
@@ -6,17 +7,17 @@ export function useConnectionStatus(): boolean {
 
   useEffect(() => {
     const checkConnection = () => {
-      chrome.runtime.sendMessage({ action: 'ping' }, () => {
-        if (chrome.runtime.lastError) {
+      sendMessage('ping')
+        .then(() => {
+          failCountRef.current = 0;
+          setConnected(true);
+        })
+        .catch(() => {
           failCountRef.current++;
           if (failCountRef.current >= 2) {
             setConnected(false);
           }
-        } else {
-          failCountRef.current = 0;
-          setConnected(true);
-        }
-      });
+        });
     };
 
     checkConnection();

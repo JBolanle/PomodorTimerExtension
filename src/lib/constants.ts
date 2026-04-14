@@ -1,31 +1,10 @@
-import type { Settings, Theme, Preset } from '@/types';
-
-export const DEFAULT_PRESET: Preset = {
-  id: 'default',
-  name: 'Default',
-  workMinutes: 25,
-  shortBreakMinutes: 5,
-  longBreakMinutes: 15,
-  sessionsBeforeLongBreak: 4,
-};
-
-export const DEFAULTS: Settings = {
-  mode: 'simple' as const,
-  notificationsEnabled: true,
-  autoStartNext: false,
-  showBadge: true,
-  soundEnabled: true,
-  soundVolume: 1.0,
-  soundPerPhase: true,
-  workCompleteSound: 'work',
-  breakCompleteSound: 'short-break',
-  showBreakTips: true,
-};
-
-export const THEMES: Theme[] = ['arctic', 'obsidian', 'ember'];
-
-export const THEME_META: Record<Theme, { label: string; description: string }> = {
-  arctic: { label: 'Arctic', description: 'Light, frosted' },
-  obsidian: { label: 'Obsidian', description: 'Dark, chrome-extruded' },
-  ember: { label: 'Ember', description: 'Warm, golden' },
-};
+// Legacy import path. Canonical definitions live in `src/shared/constants`.
+// `DEFAULTS` is kept as an alias for `DEFAULT_SETTINGS` for existing call sites.
+export {
+  DEFAULT_PRESET,
+  DEFAULT_SETTINGS,
+  DEFAULT_SETTINGS as DEFAULTS,
+  DEFAULT_FOCUS_MODE_SETTINGS,
+  THEMES,
+  THEME_META,
+} from '@/shared/constants';

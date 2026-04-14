@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Edit2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SessionMetaInput } from './SessionMetaInput';
+import { sendMessage } from '@/lib/messaging';
 
 export function CurrentSessionMeta({ visible }: { visible: boolean }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -10,7 +11,7 @@ export function CurrentSessionMeta({ visible }: { visible: boolean }) {
 
   useEffect(() => {
     if (visible) {
-      chrome.runtime.sendMessage({ action: 'getSessionMeta' }).then((res) => {
+      sendMessage('getSessionMeta').then((res) => {
         if (res) {
           setNote(res.note || '');
           setTags(res.tags || []);
@@ -22,7 +23,7 @@ export function CurrentSessionMeta({ visible }: { visible: boolean }) {
   async function saveMeta(newNote: string, newTags: string[]) {
     setNote(newNote);
     setTags(newTags);
-    await chrome.runtime.sendMessage({ action: 'setSessionMeta', note: newNote, tags: newTags }).catch(() => {});
+    await sendMessage('setSessionMeta', { note: newNote, tags: newTags }).catch(() => {});
   }
 
   if (!visible) return null;
