@@ -9,7 +9,12 @@
     "build:chrome": "vite build",
     "build:firefox": "BROWSER=firefox vite build",
     "build:all": "vite build && BROWSER=firefox vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "build:sw-spike": "vite build --config vite.sw.config.ts",
+    "build:sw-spike:firefox": "BROWSER=firefox vite build --config vite.sw.config.ts"
   },
   "dependencies": {
     "@fontsource/jetbrains-mono": "^5.2.8",
@@ -26,18 +31,23 @@
   "devDependencies": {
     "@radix-ui/react-slot": "^1.2.4",
     "@tailwindcss/vite": "^4.2.1",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.2",
     "@types/chrome": "^0.1.37",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.4",
+    "@vitest/coverage-v8": "^4.1.4",
     "autoprefixer": "^10.4.27",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "happy-dom": "^20.9.0",
     "lucide-react": "^0.577.0",
     "postcss": "^8.5.8",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.1",
     "typescript": "^5.9.3",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "vitest": "^4.1.4"
   }
 }
