@@ -1,37 +1,39 @@
-import { useState, useEffect, useCallback } from 'react';
-import { getStorage, setStorage, onStorageChanged } from '@/lib/storage';
-import { DEFAULTS } from '@/lib/constants';
-import type { Settings } from '@/types';
+import { useCallback, useEffect, useState } from 'react';
 
-const STORAGE_KEY = 'settings';
+import { settingsRepo } from '@/lib/storage/client';
+import { DEFAULT_SETTINGS } from '@/shared/constants';
+import type { Settings } from '@/shared/types';
 
 export function useSettings() {
-  const [settings, setSettingsState] = useState<Settings>(DEFAULTS);
+  const [settings, setSettingsState] = useState<Settings>(DEFAULT_SETTINGS);
 
   useEffect(() => {
-    getStorage<Settings>(STORAGE_KEY, DEFAULTS).then((loaded) => {
+    settingsRepo.get().then((loaded) => {
+      // Migrate legacy records that predate the `mode` field.
       if (loaded.mode === undefined) {
-        const migrated = { ...loaded, mode: 'advanced' as const };
-        setStorage(STORAGE_KEY, migrated);
+        const migrated: Settings = { ...loaded, mode: 'advanced' };
+        void settingsRepo.set(migrated);
         setSettingsState(migrated);
       } else {
         setSettingsState(loaded);
       }
     });
-    return onStorageChanged(STORAGE_KEY, (val) => setSettingsState(val as Settings));
+    return settingsRepo.onChange((val) => {
+      if (val) setSettingsState(val);
+    });
   }, []);
 
   const updateSettings = useCallback((patch: Partial<Settings>) => {
     setSettingsState((prev) => {
       const updated = { ...prev, ...patch };
-      setStorage(STORAGE_KEY, updated);
+      void settingsRepo.set(updated);
       return updated;
     });
   }, []);
 
   const resetSettings = useCallback(() => {
-    setSettingsState(DEFAULTS);
-    setStorage(STORAGE_KEY, DEFAULTS);
+    setSettingsState(DEFAULT_SETTINGS);
+    void settingsRepo.set(DEFAULT_SETTINGS);
   }, []);
 
   return { settings, updateSettings, resetSettings };

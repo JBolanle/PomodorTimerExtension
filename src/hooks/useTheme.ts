@@ -1,16 +1,18 @@
-import { useState, useEffect, useCallback } from 'react';
-import { getStorage, setStorage, onStorageChanged } from '@/lib/storage';
-import type { Theme } from '@/types';
+import { useCallback, useEffect, useState } from 'react';
 
-const STORAGE_KEY = 'theme';
+import { themeRepo } from '@/lib/storage/client';
+import type { Theme } from '@/shared/types';
+
 const DEFAULT_THEME: Theme = 'arctic';
 
 export function useTheme() {
   const [theme, setThemeState] = useState<Theme>(DEFAULT_THEME);
 
   useEffect(() => {
-    getStorage<Theme>(STORAGE_KEY, DEFAULT_THEME).then(setThemeState);
-    return onStorageChanged(STORAGE_KEY, (val) => setThemeState(val as Theme));
+    themeRepo.get().then(setThemeState);
+    return themeRepo.onChange((val) => {
+      if (val) setThemeState(val);
+    });
   }, []);
 
   useEffect(() => {
@@ -19,7 +21,7 @@ export function useTheme() {
 
   const setTheme = useCallback(async (t: Theme) => {
     setThemeState(t);
-    await setStorage(STORAGE_KEY, t);
+    await themeRepo.set(t);
   }, []);
 
   return { theme, setTheme };

@@ -1,10 +1,10 @@
-import type { SessionRecord, Preset } from '@/types';
-import { getStorage, setStorage } from '@/lib/storage';
+import type { Preset, Session } from '@/shared/types';
+import { presetsRepo, sessionHistoryRepo } from '@/lib/storage/client';
 
 interface ExportData {
   version: number;
   exportedAt: string;
-  sessions: SessionRecord[];
+  sessions: Session[];
   presets: Preset[];
 }
 
@@ -36,7 +36,7 @@ export async function parseImportFile(file: File): Promise<ExportData> {
   return {
     version: (obj.version as number) ?? 1,
     exportedAt: (obj.exportedAt as string) ?? '',
-    sessions: obj.sessions as SessionRecord[],
+    sessions: obj.sessions as Session[],
     presets: Array.isArray(obj.presets) ? (obj.presets as Preset[]) : [],
   };
 }
@@ -46,9 +46,9 @@ export async function importData(
   mode: 'merge' | 'replace',
 ): Promise<ImportResult> {
   if (mode === 'replace') {
-    await setStorage('sessionHistory', data.sessions);
+    await sessionHistoryRepo.set(data.sessions);
     if (data.presets.length > 0) {
-      await setStorage('presets', data.presets);
+      await presetsRepo.set(data.presets);
     }
     return {
       sessionsImported: data.sessions.length,
@@ -58,19 +58,19 @@ export async function importData(
   }
 
   // Merge mode — deduplicate by ID
-  const existingSessions = await getStorage<SessionRecord[]>('sessionHistory', []);
+  const existingSessions = await sessionHistoryRepo.get();
   const existingIds = new Set(existingSessions.map((s) => s.id));
   const newSessions = data.sessions.filter((s) => !existingIds.has(s.id));
   const merged = [...existingSessions, ...newSessions];
-  await setStorage('sessionHistory', merged);
+  await sessionHistoryRepo.set(merged);
 
   let presetsImported = 0;
   if (data.presets.length > 0) {
-    const existingPresets = await getStorage<Preset[]>('presets', []);
+    const existingPresets = await presetsRepo.get();
     const existingPresetIds = new Set(existingPresets.map((p) => p.id));
     const newPresets = data.presets.filter((p) => !existingPresetIds.has(p.id));
     if (newPresets.length > 0) {
-      await setStorage('presets', [...existingPresets, ...newPresets]);
+      await presetsRepo.set([...existingPresets, ...newPresets]);
       presetsImported = newPresets.length;
     }
   }

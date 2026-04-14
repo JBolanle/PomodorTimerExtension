@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { getStorage, setStorage, onStorageChanged } from '@/lib/storage';
-import type { Session, DateFilterOption } from '@/types';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-const STORAGE_KEY = 'sessions';
+import { sessionsRepo } from '@/lib/storage/client';
+import type { DateFilterOption, Session } from '@/shared/types';
 
 function startOfToday(): number {
   const now = new Date();
@@ -32,12 +31,12 @@ export function useHistory() {
   const [customRange, setCustomRange] = useState<{ start: Date; end: Date } | null>(null);
 
   useEffect(() => {
-    getStorage<Session[]>(STORAGE_KEY, []).then(setSessions);
-    return onStorageChanged(STORAGE_KEY, (val) => setSessions(val as Session[]));
+    sessionsRepo.get().then(setSessions);
+    return sessionsRepo.onChange((val) => setSessions(val ?? []));
   }, []);
 
   const clearHistory = useCallback(async () => {
-    await setStorage(STORAGE_KEY, []);
+    await sessionsRepo.set([]);
     setSessions([]);
   }, []);
 
