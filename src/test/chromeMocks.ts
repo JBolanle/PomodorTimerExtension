@@ -16,6 +16,7 @@ export interface ChromeMocks {
   onAlarmListeners: Listener[];
   onCommandListeners: Listener[];
   onStorageChangedListeners: Listener[];
+  onConnectListeners: Listener[];
   dnrRules: Array<{ id: number; priority: number; action: any; condition: any }>;
   notifications: Array<{ id?: string; options: any }>;
   badge: { text: string; color: string };
@@ -78,6 +79,49 @@ export async function fireAlarm(name: string): Promise<void> {
   }
 }
 
+/**
+ * Simulate a popup opening a long-lived port. Returns an object
+ * exposing the messages the SW posted, plus helpers to disconnect or
+ * subscribe. Phase 4 tests use this to verify push behavior.
+ */
+export function fireConnect(name: string): {
+  posted: unknown[];
+  messageListeners: Listener[];
+  disconnectListeners: Listener[];
+  disconnect: () => void;
+} {
+  const mocks = getMocks();
+  const posted: unknown[] = [];
+  const messageListeners: Listener[] = [];
+  const disconnectListeners: Listener[] = [];
+  const port = {
+    name,
+    postMessage: (msg: unknown) => {
+      posted.push(msg);
+    },
+    onMessage: {
+      addListener: (fn: Listener) => messageListeners.push(fn),
+    },
+    onDisconnect: {
+      addListener: (fn: Listener) => disconnectListeners.push(fn),
+    },
+    disconnect: () => {
+      for (const l of disconnectListeners) l();
+    },
+  };
+  for (const listener of mocks.onConnectListeners) {
+    listener(port);
+  }
+  return {
+    posted,
+    messageListeners,
+    disconnectListeners,
+    disconnect: () => {
+      for (const l of disconnectListeners) l();
+    },
+  };
+}
+
 export async function fireCommand(command: string): Promise<void> {
   const mocks = getMocks();
   for (const listener of mocks.onCommandListeners) {
@@ -96,6 +140,7 @@ export function installChromeMocks(): ChromeMocks {
     onAlarmListeners: [],
     onCommandListeners: [],
     onStorageChangedListeners: [],
+    onConnectListeners: [],
     dnrRules: [],
     notifications: [],
     badge: { text: "", color: "" },
@@ -121,6 +166,12 @@ export function installChromeMocks(): ChromeMocks {
       getURL: (path: string) => `chrome-extension://test/${path.replace(/^\//, "")}`,
       getContexts: async () => (mocks.offscreenCreated ? [{ contextType: "OFFSCREEN_DOCUMENT" }] : []),
       lastError: undefined as chrome.runtime.LastError | undefined,
+      onConnect: {
+        addListener: (fn: Listener) => mocks.onConnectListeners.push(fn),
+        removeListener: (fn: Listener) => {
+          mocks.onConnectListeners = mocks.onConnectListeners.filter((l) => l !== fn);
+        },
+      },
     },
 
     storage: {

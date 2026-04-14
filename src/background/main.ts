@@ -21,7 +21,7 @@ import { getActivePreset, getMinutesForPhase } from './presets/store';
 import { runtime, timerState } from './state';
 import { handleAutoStart, handleTimerComplete } from './timer/completion';
 import { doPause, doResume, doSkip, doStartTimer } from './timer/operations';
-void runtime; // Phase 4 port handlers will read this — keep the import live.
+void runtime; // Read by badge + focus mode paths; keep the import live.
 
 // --- Messaging ---
 

@@ -5,6 +5,7 @@ import '@/styles/globals.css';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ToastProvider } from '@/components/ui/toast';
 import { AnnouncerProvider } from '@/components/Announcer';
+import { AppProviders } from '@/contexts/Providers';
 import App from './App';
 
 createRoot(document.getElementById('root')!).render(
@@ -12,7 +13,9 @@ createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <ToastProvider>
         <AnnouncerProvider>
-          <App />
+          <AppProviders>
+            <App />
+          </AppProviders>
         </AnnouncerProvider>
       </ToastProvider>
     </ErrorBoundary>

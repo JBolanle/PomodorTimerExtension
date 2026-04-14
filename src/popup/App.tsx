@@ -4,6 +4,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { usePresets } from '@/hooks/usePresets';
 import { useSettings } from '@/hooks/useSettings';
 import { useAppMode } from '@/hooks/useAppMode';
+import { useFocusMode } from '@/hooks/useFocusMode';
 import { usePopupShortcuts } from '@/hooks/usePopupShortcuts';
 import { useConnectionStatus } from '@/hooks/useConnectionStatus';
 import { useToast } from '@/components/ui/toast';
@@ -48,27 +49,32 @@ export default function App() {
   const { isAdvanced } = useAppMode();
   const connected = useConnectionStatus();
   const toast = useToast();
+  const {
+    settings: focusModeSettings,
+    status: focusModeStatus,
+    refreshStatus: refreshFocusModeStatus,
+  } = useFocusMode();
   const [showStartModal, setShowStartModal] = useState(false);
-  const [focusModeActive, setFocusModeActive] = useState(false);
+  // Local override for the "Enable focus mode this session" modal
+  // toggle — seeded from the global settings once they load.
   const [focusModeEnabled, setFocusModeEnabled] = useState(true);
 
   useEffect(() => {
-    if (isAdvanced) {
-      sendMessage('getFocusModeSettings')
-        .then(res => setFocusModeEnabled(res?.settings?.enabled ?? true))
-        .catch(() => {});
+    if (isAdvanced && focusModeSettings) {
+      setFocusModeEnabled(focusModeSettings.enabled);
     }
-  }, [isAdvanced]);
+  }, [isAdvanced, focusModeSettings]);
 
   useEffect(() => {
     if ((timerState === 'running' || timerState === 'paused') && currentPhase === 'work') {
-      sendMessage('getFocusModeStatus')
-        .then(res => setFocusModeActive(res?.active ?? false))
-        .catch(() => setFocusModeActive(false));
-    } else {
-      setFocusModeActive(false);
+      void refreshFocusModeStatus();
     }
-  }, [timerState, currentPhase]);
+  }, [timerState, currentPhase, refreshFocusModeStatus]);
+
+  const focusModeActive =
+    (timerState === 'running' || timerState === 'paused') &&
+    currentPhase === 'work' &&
+    (focusModeStatus?.active ?? false);
 
   const showBreakTip = settings.showBreakTips &&
     (currentPhase === 'shortBreak' || currentPhase === 'longBreak') &&
