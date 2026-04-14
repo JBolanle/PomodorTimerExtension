@@ -9,7 +9,7 @@ export default defineConfig({
     setupFiles: ["src/test/setup.ts"],
     coverage: {
       provider: "v8",
-      include: ["src/**/*.{ts,tsx}", "public/background/**/*.js"],
+      include: ["src/**/*.{ts,tsx}"],
       exclude: ["src/test/**", "src/**/*.test.*"],
     },
   },

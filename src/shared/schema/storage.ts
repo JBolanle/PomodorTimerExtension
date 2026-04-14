@@ -18,14 +18,11 @@ import type {
   TimerStateEnum,
 } from '@/shared/types';
 
-/** Persisted session-grouping record kept by the SW while a session is active. */
-export interface CurrentSessionRecord {
-  id: string;
-  startedAt: number;
-  presetId: string;
-  presetName: string;
-  phases: Session['phases'];
-}
+/** Persisted session-grouping record kept by the SW while a session is
+ *  active. Same shape as a closed `Session` (it becomes one on close);
+ *  typed via intersection so all Session fields are available while the
+ *  SW mutates it in flight. */
+export type CurrentSessionRecord = Session;
 
 export interface StorageSchema {
   // --- User-facing settings ---
