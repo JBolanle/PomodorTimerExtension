@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { Tag, X } from 'lucide-react';
-import type { SessionRecord } from '@/types';
+import type { Session } from '@/shared/types';
 
 interface TagFilterProps {
-  sessions: SessionRecord[];
+  sessions: Session[];
   selectedTags: string[];
   onChange: (tags: string[]) => void;
 }
@@ -11,7 +11,7 @@ interface TagFilterProps {
 export function TagFilter({ sessions, selectedTags, onChange }: TagFilterProps) {
   const allTags = useMemo(() => {
     const tags = new Set<string>();
-    sessions.forEach((s) => s.tags?.forEach((t) => tags.add(t)));
+    sessions.forEach((s) => s.tags?.forEach((t: string) => tags.add(t)));
     return Array.from(tags).sort();
   }, [sessions]);
 
